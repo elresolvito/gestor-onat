@@ -258,10 +258,10 @@
                 Gestor Fiscal TCP Pro
             </h1>
             <div class="flex gap-2">
-                <!-- Indicador de estado -->
+                <!-- Indicador de estado - CORREGIDO -->
                 <div id="save-indicator" class="flex items-center gap-1 px-3 py-1 bg-white dark:bg-slate-800 rounded-full border text-xs" title="Estado de guardado">
-                    <i data-lucide="cloud-off" class="w-3 h-3 text-slate-400"></i>
-                    <span>Sin guardar</span>
+                    <i data-lucide="check-circle" class="w-3 h-3 text-green-600"></i>
+                    <span>Guardado</span>
                 </div>
                 
                 <!-- Toggle tema oscuro -->
@@ -763,9 +763,9 @@
         </footer>
     </div>
 
-    <!-- Botón flotante para instalar -->
+    <!-- Botón flotante para instalar - CORREGIDO -->
     <div id="install-button" class="fixed bottom-4 right-4 hidden">
-        <button onclick="installApp()" class="bg-blue-600 text-white px-4 py-3 rounded-full shadow-lg flex items-center gap-2 hover:bg-blue-700 transition-all">
+        <button onclick="showInstallInstructions()" class="bg-blue-600 text-white px-4 py-3 rounded-full shadow-lg flex items-center gap-2 hover:bg-blue-700 transition-all">
             <i data-lucide="download" class="w-5 h-5"></i>
             <span>Instalar App</span>
         </button>
@@ -789,10 +789,10 @@
             { min: 120000, max: Infinity, rate: 0.30, base: 16698 }
         ];
 
-        // --- ESTADO INICIAL CORREGIDO ---
+        // --- ESTADO INICIAL ---
         let state = {
-            clients: [], // {id, name, movements: []}
-            taxPayments: [], // Registro de impuestos pagados por cliente
+            clients: [],
+            taxPayments: [],
             selectedClientId: null,
             config: {
                 hasEmployees: false,
@@ -801,23 +801,17 @@
         };
         
         let saveTimeout;
-        let hasUnsavedChanges = false;
-        
-        // Variables para gráficos
-        let incomeExpenseChart = null;
-        let taxBreakdownChart = null;
         
         // Variable para instalación PWA
         let deferredPrompt;
 
-        // --- INICIO CORREGIDO ---
+        // --- INICIO ---
         window.onload = () => {
             lucide.createIcons();
-            loadState(); // Primero cargamos el estado guardado
-            renderClients(); // Luego renderizamos los clientes
-            updateClientSelects(); // Actualizamos los selects
+            loadState();
+            renderClients();
+            updateClientSelects();
             calculateTaxes();
-            updateSaveIndicator();
             
             // Configurar fecha actual
             const today = new Date().toISOString().split('T')[0];
@@ -829,21 +823,50 @@
                 document.body.classList.add('dark');
                 updateDarkModeIcon();
             }
-            
-            console.log('App iniciada correctamente');
         };
+
+        // --- FUNCIÓN DE GUARDADO CORREGIDA ---
+        function save(showNotification = false) {
+            try {
+                // Guardar inmediatamente sin timeout
+                const jsonString = JSON.stringify(state);
+                const compressed = 'COMPRESSED:' + LZString.compress(jsonString);
+                localStorage.setItem('tcp_data_v4', compressed);
+                
+                // Actualizar indicador visual
+                const indicator = document.getElementById('save-indicator');
+                if(indicator) {
+                    const icon = indicator.querySelector('i');
+                    const text = indicator.querySelector('span');
+                    icon.setAttribute('data-lucide', 'check-circle');
+                    text.textContent = 'Guardado';
+                    lucide.createIcons();
+                }
+                
+                if(showNotification) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Éxito',
+                        text: 'Datos guardados correctamente',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                }
+            } catch(e) {
+                console.error('Error saving:', e);
+                Swal.fire('Error', 'No se pudo guardar los datos', 'error');
+            }
+        }
 
         function loadState() {
             try {
                 const saved = localStorage.getItem('tcp_data_v4');
                 if(saved) {
-                    // Descomprimir si está comprimido
                     if(saved.startsWith('COMPRESSED:')) {
                         const compressed = saved.substring(10);
                         const decompressed = LZString.decompress(compressed);
                         if(decompressed) {
                             const loadedState = JSON.parse(decompressed);
-                            // Actualizar el estado con los datos guardados
                             state.clients = loadedState.clients || [];
                             state.taxPayments = loadedState.taxPayments || [];
                             state.selectedClientId = loadedState.selectedClientId || null;
@@ -859,61 +882,7 @@
                 }
             } catch(e) {
                 console.error('Error loading state:', e);
-                // Si hay error, mantener el estado inicial vacío
-                state.clients = [];
-                state.taxPayments = [];
-                state.selectedClientId = null;
-                state.config = { hasEmployees: false, darkMode: false };
             }
-        }
-
-        function save(showNotification = false) {
-            hasUnsavedChanges = true;
-            clearTimeout(saveTimeout);
-            
-            saveTimeout = setTimeout(() => {
-                try {
-                    // Comprimir datos para ahorrar espacio
-                    const jsonString = JSON.stringify(state);
-                    const compressed = 'COMPRESSED:' + LZString.compress(jsonString);
-                    localStorage.setItem('tcp_data_v4', compressed);
-                    
-                    hasUnsavedChanges = false;
-                    updateSaveIndicator();
-                    
-                    if(showNotification) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Guardado',
-                            text: 'Datos guardados correctamente',
-                            timer: 1500,
-                            showConfirmButton: false
-                        });
-                    }
-                } catch(e) {
-                    console.error('Error saving:', e);
-                    Swal.fire('Error', 'No se pudo guardar los datos', 'error');
-                }
-            }, 500);
-            
-            updateSaveIndicator();
-        }
-
-        function updateSaveIndicator() {
-            const indicator = document.getElementById('save-indicator');
-            if(!indicator) return;
-            
-            const icon = indicator.querySelector('i');
-            const text = indicator.querySelector('span');
-            
-            if(hasUnsavedChanges) {
-                icon.setAttribute('data-lucide', 'cloud');
-                text.textContent = 'Guardando...';
-            } else {
-                icon.setAttribute('data-lucide', 'cloud-off');
-                text.textContent = 'Guardado';
-            }
-            lucide.createIcons();
         }
 
         // --- TEMA OSCURO ---
@@ -933,53 +902,52 @@
             }
         }
 
-        // --- INSTALACIÓN PWA ---
+        // --- INSTALACIÓN PWA - CORREGIDO ---
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
             document.getElementById('install-button').classList.remove('hidden');
         });
         
-        window.installApp = async () => {
-            if (!deferredPrompt) return;
-            
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            
-            if (outcome === 'accepted') {
-                console.log('Usuario aceptó instalar');
-            }
-            
-            deferredPrompt = null;
-            document.getElementById('install-button').classList.add('hidden');
+        window.showInstallInstructions = function() {
+            Swal.fire({
+                title: '📱 Instalar App',
+                html: `
+                    <div style="text-align: left">
+                        <p><strong>Para instalar en Android:</strong></p>
+                        <ol style="margin-left: 20px; text-align: left">
+                            <li>Toca los 3 puntos ⋮</li>
+                            <li>Selecciona "Agregar a pantalla de inicio"</li>
+                            <li>Confirma la instalación</li>
+                        </ol>
+                        <p style="margin-top: 15px"><strong>Para iPhone:</strong></p>
+                        <ol style="margin-left: 20px; text-align: left">
+                            <li>Toca el botón Compartir 📤</li>
+                            <li>Selecciona "Agregar a pantalla de inicio"</li>
+                            <li>Confirma</li>
+                        </ol>
+                    </div>
+                `,
+                icon: 'info',
+                confirmButtonText: 'Entendido'
+            });
         };
-        
-        window.addEventListener('appinstalled', () => {
-            console.log('App instalada');
-            document.getElementById('install-button').classList.add('hidden');
-        });
 
         // --- NAVEGACIÓN ---
         function switchTab(tabId) {
-            // Remover active de todos
             document.querySelectorAll('nav button').forEach(b => {
                 b.classList.remove('active', 'bg-white');
             });
             document.getElementById(`tab-${tabId}`).classList.add('active');
             
-            // Ocultar todas las secciones
             document.querySelectorAll('section[id^="section-"]').forEach(s => {
                 s.classList.add('hidden');
             });
             document.getElementById(`section-${tabId}`).classList.remove('hidden');
             
-            // Actualizar según la pestaña
             if(tabId === 'dj') calculateDJ();
             if(tabId === 'taxes') renderTaxTable();
             if(tabId === 'reports') updateClientSelects();
-            
-            // Guardar pestaña activa
-            localStorage.setItem('active_tab', tabId);
         }
 
         // --- CALCULADORA ---
@@ -1038,7 +1006,6 @@
             
             const taxes = calculateTaxes();
             
-            // Crear registro de impuesto
             const taxRecord = {
                 id: Date.now(),
                 clientId: client.id,
@@ -1068,7 +1035,6 @@
             
             save(true);
             
-            // Limpiar campos
             document.getElementById('monthly-income').value = '';
             document.getElementById('emp-salaries').value = '';
             document.getElementById('tax-client').value = '';
@@ -1078,26 +1044,23 @@
 
         // --- CLIENTES ---
         function updateClientSelects() {
-            // Actualizar select de clientes en calculadora
-            const taxSelect = document.getElementById('tax-client');
-            const djSelect = document.getElementById('dj-client');
-            const reportSelect = document.getElementById('report-client');
-            const taxFilterSelect = document.getElementById('tax-filter-client');
+            const selects = ['tax-client', 'dj-client', 'report-client', 'tax-filter-client'];
             
-            [taxSelect, djSelect, reportSelect, taxFilterSelect].forEach(select => {
+            selects.forEach(id => {
+                const select = document.getElementById(id);
                 if(select) {
                     const currentValue = select.value;
                     select.innerHTML = '';
                     
-                    if(select.id === 'tax-filter-client') {
+                    if(id === 'tax-filter-client') {
                         select.innerHTML = '<option value="all">Todos los clientes</option>';
                     }
                     
-                    if(select.id === 'dj-client' || select.id === 'report-client') {
+                    if(id === 'dj-client' || id === 'report-client') {
                         select.innerHTML = '<option value="all">Todos los clientes</option>';
                     }
                     
-                    if(select.id === 'tax-client') {
+                    if(id === 'tax-client') {
                         select.innerHTML = '<option value="">Seleccionar cliente...</option>';
                     }
                     
@@ -1108,7 +1071,6 @@
                         select.appendChild(option);
                     });
                     
-                    // Restaurar valor si existe
                     if(currentValue && Array.from(select.options).some(opt => opt.value == currentValue)) {
                         select.value = currentValue;
                     }
@@ -1124,9 +1086,7 @@
                 inputPlaceholder: 'Ej: Juan Pérez',
                 showCancelButton: true,
                 inputValidator: (value) => {
-                    if (!value) {
-                        return 'Debes escribir un nombre';
-                    }
+                    if (!value) return 'Debes escribir un nombre';
                 }
             });
             
@@ -1153,21 +1113,16 @@
                 inputValue: client.name,
                 showCancelButton: true,
                 inputValidator: (value) => {
-                    if (!value) {
-                        return 'Debes escribir un nombre';
-                    }
+                    if (!value) return 'Debes escribir un nombre';
                 }
             });
             
             if(name) {
                 client.name = name;
                 
-                // Actualizar nombre en pagos de impuestos
                 if(state.taxPayments) {
                     state.taxPayments.forEach(t => {
-                        if(t.clientId === id) {
-                            t.clientName = name;
-                        }
+                        if(t.clientId === id) t.clientName = name;
                     });
                 }
                 
@@ -1227,10 +1182,10 @@
                         ${c.name}
                     </button>
                     <div class="absolute top-0 right-0 hidden group-hover:flex gap-1 -mt-1 -mr-2 z-10">
-                        <button onclick="editClient(${c.id})" class="bg-blue-500 text-white rounded-full p-0.5 w-5 h-5 flex items-center justify-center text-[8px] hover:bg-blue-600">
+                        <button onclick="editClient(${c.id})" class="bg-blue-500 text-white rounded-full p-0.5 w-5 h-5 flex items-center justify-center hover:bg-blue-600">
                             <i data-lucide="pencil" class="w-3 h-3"></i>
                         </button>
-                        <button onclick="deleteClient(${c.id})" class="bg-red-500 text-white rounded-full p-0.5 w-5 h-5 flex items-center justify-center text-[8px] hover:bg-red-600">
+                        <button onclick="deleteClient(${c.id})" class="bg-red-500 text-white rounded-full p-0.5 w-5 h-5 flex items-center justify-center hover:bg-red-600">
                             <i data-lucide="trash-2" class="w-3 h-3"></i>
                         </button>
                     </div>
@@ -1351,8 +1306,7 @@
             const client = state.clients.find(c => c.id === state.selectedClientId);
             if(!client) return;
             
-            let income = 0;
-            let expense = 0;
+            let income = 0, expense = 0;
             
             if(client.movements) {
                 client.movements.forEach(m => {
@@ -1374,18 +1328,10 @@
             
             let filteredPayments = state.taxPayments ? [...state.taxPayments] : [];
             
-            // Aplicar filtros
-            if(filterClient !== 'all') {
-                filteredPayments = filteredPayments.filter(t => t.clientId == filterClient);
-            }
-            if(filterMonth !== 'all') {
-                filteredPayments = filteredPayments.filter(t => t.month == filterMonth);
-            }
-            if(filterYear !== 'all') {
-                filteredPayments = filteredPayments.filter(t => t.year == filterYear);
-            }
+            if(filterClient !== 'all') filteredPayments = filteredPayments.filter(t => t.clientId == filterClient);
+            if(filterMonth !== 'all') filteredPayments = filteredPayments.filter(t => t.month == filterMonth);
+            if(filterYear !== 'all') filteredPayments = filteredPayments.filter(t => t.year == filterYear);
             
-            // Ordenar por fecha (más reciente primero)
             filteredPayments.sort((a, b) => new Date(b.date) - new Date(a.date));
             
             const tbody = document.getElementById('tax-table-body');
@@ -1425,13 +1371,11 @@
                 });
             }
             
-            // Actualizar resumen
             document.getElementById('tax-total-sales').innerText = totalSales.toFixed(2);
             document.getElementById('tax-total-personal').innerText = totalPersonal.toFixed(2);
             document.getElementById('tax-total-cess').innerText = totalCess.toFixed(2);
             document.getElementById('tax-total-amount').innerText = totalAll.toFixed(2);
             
-            // Agregar footer
             const tfoot = document.getElementById('tax-table-footer');
             if(tfoot) {
                 tfoot.innerHTML = `
@@ -1495,18 +1439,16 @@
             a.click();
         }
 
-        // --- DJ ACTUALIZADA ---
+        // --- DJ ---
         function calculateDJ() {
             const clientId = document.getElementById('dj-client').value;
             const year = parseInt(document.getElementById('dj-year').value);
             
-            let totalI = 0;
-            let totalE = 0;
+            let totalI = 0, totalE = 0;
             
             if(!state.clients) state.clients = [];
             
             state.clients.forEach(c => {
-                // Si hay un cliente específico seleccionado, solo procesar ese
                 if(clientId !== 'all' && c.id != clientId) return;
                 
                 if(c.movements) {
@@ -1523,7 +1465,6 @@
             const net = totalI - totalE;
             const base = Math.max(0, net - 39120);
             
-            // Calcular impuesto progresivo
             let tax = 0;
             for(let i = TAX_BRACKETS.length - 1; i >= 0; i--) {
                 const bracket = TAX_BRACKETS[i];
@@ -1548,10 +1489,9 @@
                 text: 'Esta función generará un PDF con la declaración jurada',
                 timer: 2000
             });
-            // Aquí se implementaría la generación de PDF con una librería como jspdf
         }
 
-        // --- REPORTES INDIVIDUALES POR CLIENTE ---
+        // --- REPORTES ---
         function loadClientReport() {
             const clientId = document.getElementById('report-client').value;
             
@@ -1569,10 +1509,8 @@
             
             if(!client) return;
             
-            // Actualizar nombre del cliente en el reporte
             document.getElementById('report-client-name').innerText = client.name;
             
-            // Filtrar movimientos según período
             let movements = client.movements ? [...client.movements] : [];
             let taxPayments = state.taxPayments ? state.taxPayments.filter(t => t.clientId == clientId) : [];
             
@@ -1599,7 +1537,6 @@
                 });
             }
             
-            // Calcular totales
             let income = 0, expense = 0;
             movements.forEach(m => {
                 if(m.type === 'income') income += m.amount;
@@ -1609,7 +1546,6 @@
             const balance = income - expense;
             const totalTaxes = taxPayments.reduce((sum, t) => sum + (t.total || 0), 0);
             
-            // Actualizar tarjetas
             document.getElementById('report-income').innerText = income.toFixed(2);
             document.getElementById('report-expense').innerText = expense.toFixed(2);
             document.getElementById('report-balance').innerText = balance.toFixed(2);
@@ -1619,13 +1555,11 @@
             document.getElementById('report-expense-count').innerText = `${movements.filter(m => m.type === 'expense').length} operaciones`;
             document.getElementById('report-taxes-count').innerText = `${taxPayments.length} pagos`;
             
-            // Actualizar período
             let periodText = 'Todo el historial';
             if(period === 'month') periodText = 'Este mes';
             else if(period !== 'all') periodText = `Año ${period}`;
             document.getElementById('report-client-period').innerText = periodText;
             
-            // Renderizar tabla de movimientos
             const movementsBody = document.getElementById('report-movements-body');
             movementsBody.innerHTML = '';
             
@@ -1650,7 +1584,6 @@
                 });
             }
             
-            // Renderizar tabla de impuestos
             const taxesBody = document.getElementById('report-taxes-body');
             taxesBody.innerHTML = '';
             
@@ -1671,16 +1604,13 @@
                 });
             }
             
-            // Crear gráficos
             createCharts(income, expense, taxPayments);
         }
         
         function createCharts(income, expense, taxPayments) {
-            // Destruir gráficos anteriores si existen
             if(incomeExpenseChart) incomeExpenseChart.destroy();
             if(taxBreakdownChart) taxBreakdownChart.destroy();
             
-            // Gráfico de ingresos vs gastos
             const ctx1 = document.getElementById('incomeExpenseChart')?.getContext('2d');
             if(ctx1) {
                 incomeExpenseChart = new Chart(ctx1, {
@@ -1698,16 +1628,11 @@
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: false
-                            }
-                        }
+                        plugins: { legend: { display: false } }
                     }
                 });
             }
             
-            // Gráfico de desglose de impuestos
             const taxBreakdown = {
                 sales: taxPayments.reduce((sum, t) => sum + (t.salesTax || 0), 0),
                 personal: taxPayments.reduce((sum, t) => sum + (t.personalTax || 0), 0),
@@ -1731,11 +1656,7 @@
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom'
-                            }
-                        }
+                        plugins: { legend: { position: 'bottom' } }
                     }
                 });
             }
@@ -1762,7 +1683,6 @@
                 const text = await file.text();
                 const importedState = JSON.parse(text);
                 
-                // Validación básica
                 if(!importedState.clients || !Array.isArray(importedState.clients)) {
                     throw new Error('Formato de archivo inválido');
                 }
@@ -1788,11 +1708,9 @@
                     location.reload();
                 }
             } catch(error) {
-                console.error('Import error:', error);
                 Swal.fire('Error', 'El archivo no es válido', 'error');
             }
             
-            // Limpiar input
             e.target.value = '';
         }
     </script>
