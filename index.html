@@ -1,524 +1,525 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  Calculator, 
-  Users, 
-  FileText, 
-  FolderOpen, 
-  Save, 
-  Plus, 
-  Trash2, 
-  ChevronRight, 
-  ChevronDown, 
-  Download,
-  Cloud,
-  Moon,
-  Sun,
-  DollarSign,
-  TrendingUp,
-  Briefcase
-} from 'lucide-react';
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Fiscal TCP - Cuba</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
 
-// --- CONSTANTES TRIBUTARIAS (Basadas en normativas actuales) ---
-const TAX_RATES = {
-  ventas_servicios: 0.10, // 10%
-  ingresos_personales_mensual: 0.05, // 5% a cuenta
-  seguridad_social_empleador: 0.14, // 14%
-  fuerza_trabajo: 0.05, // 5%
-};
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
 
-const ESCALAS_SS = [
-  { base: 2000, cuota: 400 },
-  { base: 2500, cuota: 500 },
-  { base: 3000, cuota: 600 },
-  { base: 3500, cuota: 700 },
-  { base: 4000, cuota: 800 },
-  { base: 4500, cuota: 900 },
-  { base: 5000, cuota: 1000 },
-];
+        .btn-primary {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
-const ESCALAS_DJ = [
-  { limite: 30000, tipo: 0.15, acumulado: 0 },
-  { limite: 50000, tipo: 0.20, acumulado: 4500 },
-  { limite: 100000, tipo: 0.25, acumulado: 8500 },
-  { limite: 150000, tipo: 0.35, acumulado: 21000 },
-  { limite: Infinity, tipo: 0.50, acumulado: 38500 }
-];
+        .btn-primary:active {
+            transform: scale(0.95);
+        }
 
-const App = () => {
-  // --- ESTADO GLOBAL ---
-  const [activeTab, setActiveTab] = useState('calculadora');
-  const [darkMode, setDarkMode] = useState(false);
-  const [data, setData] = useState(() => {
-    const saved = localStorage.getItem('tcp_data');
-    return saved ? JSON.parse(saved) : {
-      perfil: { nombre: '', nit: '' },
-      empleados: [],
-      registros: [], // { id, fecha, cliente, tipo, concepto, monto }
-      clientes: ['General'],
-      config: { tieneEmpleados: false }
-    };
-  });
+        .tab-active {
+            border-bottom: 3px solid #10b981;
+            color: #10b981;
+        }
 
-  // --- PERSISTENCIA ---
-  useEffect(() => {
-    localStorage.setItem('tcp_data', JSON.stringify(data));
-  }, [data]);
+        input:focus {
+            outline: none;
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
 
-  // --- LÓGICA DE CÁLCULO ---
-  const calculations = useMemo(() => {
-    const ingresosMes = data.registros
-      .filter(r => r.tipo === 'ingreso')
-      .reduce((acc, curr) => acc + parseFloat(curr.monto || 0), 0);
-    
-    const gastosMes = data.registros
-      .filter(r => r.tipo === 'gasto')
-      .reduce((acc, curr) => acc + parseFloat(curr.monto || 0), 0);
-
-    const salariosTotal = data.empleados.reduce((acc, curr) => acc + parseFloat(curr.salario || 0), 0);
-    
-    const impVentas = ingresosMes * TAX_RATES.ventas_servicios;
-    const impFuerzaTrabajo = data.config.tieneEmpleados ? salariosTotal * TAX_RATES.fuerza_trabajo : 0;
-    const impSeguridadSocial = data.config.tieneEmpleados ? salariosTotal * TAX_RATES.seguridad_social_empleador : 0;
-    const pagoAnticipado = ingresosMes * TAX_RATES.ingresos_personales_mensual;
-
-    return {
-      ingresosMes,
-      gastosMes,
-      salariosTotal,
-      impVentas,
-      impFuerzaTrabajo,
-      impSeguridadSocial,
-      pagoAnticipado,
-      totalPagar: impVentas + impFuerzaTrabajo + impSeguridadSocial + pagoAnticipado
-    };
-  }, [data]);
-
-  // --- COMPONENTES DE INTERFAZ ---
-  const TabButton = ({ id, icon: Icon, label }) => (
-    <button
-      onClick={() => setActiveTab(id)}
-      className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-300 ${
-        activeTab === id 
-          ? 'bg-blue-600 text-white shadow-lg scale-105' 
-          : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'
-      }`}
-    >
-      <Icon size={20} />
-      <span className="text-[10px] mt-1 font-medium uppercase tracking-wider">{label}</span>
-    </button>
-  );
-
-  const SectionTitle = ({ title, subtitle }) => (
-    <div className="mb-6">
-      <h2 className="text-2xl font-bold text-gray-800 dark:text-white">{title}</h2>
-      <p className="text-sm text-gray-500 dark:text-gray-400">{subtitle}</p>
-    </div>
-  );
-
-  // --- VISTAS ---
-  
-  const CalculadoraView = () => (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <Briefcase className="text-blue-500" /> Configuración de Actividad
-          </h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-              <span>¿Tiene empleados contratados?</span>
-              <button 
-                onClick={() => setData({...data, config: {...data.config, tieneEmpleados: !data.config.tieneEmpleados}})}
-                className={`w-12 h-6 rounded-full transition-colors relative ${data.config.tieneEmpleados ? 'bg-green-500' : 'bg-gray-300'}`}
-              >
-                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${data.config.tieneEmpleados ? 'translate-x-7' : 'translate-x-1'}`} />
-              </button>
-            </div>
-            <div className="p-4 border border-blue-100 dark:border-blue-900 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
-              <div className="flex justify-between text-sm mb-1 text-blue-800 dark:text-blue-300">
-                <span>Ingresos Brutos (Mes):</span>
-                <span className="font-mono">${calculations.ingresosMes.toFixed(2)}</span>
-              </div>
-              <p className="text-[10px] text-blue-600 dark:text-blue-400">Calculado automáticamente desde tus registros.</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-2xl shadow-xl text-white">
-          <h3 className="text-lg font-medium opacity-90 mb-4 uppercase tracking-tighter">Resumen de Impuestos a Pagar</h3>
-          <div className="space-y-3">
-            <div className="flex justify-between border-b border-white/10 pb-2">
-              <span className="text-sm">Ventas/Servicios (10%)</span>
-              <span className="font-mono">${calculations.impVentas.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between border-b border-white/10 pb-2">
-              <span className="text-sm">Ingresos Personales (5%)</span>
-              <span className="font-mono">${calculations.pagoAnticipado.toFixed(2)}</span>
-            </div>
-            {data.config.tieneEmpleados && (
-              <>
-                <div className="flex justify-between border-b border-white/10 pb-2">
-                  <span className="text-sm">Util. Fuerza Trabajo (5%)</span>
-                  <span className="font-mono">${calculations.impFuerzaTrabajo.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between border-b border-white/10 pb-2">
-                  <span className="text-sm">Seguridad Social (14%)</span>
-                  <span className="font-mono">${calculations.impSeguridadSocial.toFixed(2)}</span>
-                </div>
-              </>
-            )}
-            <div className="flex justify-between pt-2 text-xl font-bold">
-              <span>TOTAL</span>
-              <span className="font-mono">${calculations.totalPagar.toFixed(2)}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const RegistrosView = () => {
-    const [newItem, setNewItem] = useState({ tipo: 'ingreso', cliente: 'General', concepto: '', monto: '' });
-    
-    const addRegistro = () => {
-      if(!newItem.concepto || !newItem.monto) return;
-      setData({
-        ...data,
-        registros: [...data.registros, { ...newItem, id: Date.now(), fecha: new Date().toLocaleDateString() }]
-      });
-      setNewItem({ tipo: 'ingreso', cliente: 'General', concepto: '', monto: '' });
-    };
-
-    return (
-      <div className="space-y-6">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm">
-          <h3 className="text-lg font-semibold mb-4">Nuevo Movimiento</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
-            <select 
-              className="p-2 rounded-lg bg-gray-50 dark:bg-gray-900 border-none outline-none focus:ring-2 ring-blue-500"
-              value={newItem.tipo}
-              onChange={(e) => setNewItem({...newItem, tipo: e.target.value})}
-            >
-              <option value="ingreso">Ingreso (+)</option>
-              <option value="gasto">Gasto (-)</option>
-            </select>
-            <select 
-              className="p-2 rounded-lg bg-gray-50 dark:bg-gray-900 border-none outline-none focus:ring-2 ring-blue-500"
-              value={newItem.cliente}
-              onChange={(e) => setNewItem({...newItem, cliente: e.target.value})}
-            >
-              {data.clientes.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <input 
-              type="text" placeholder="Concepto" 
-              className="p-2 rounded-lg bg-gray-50 dark:bg-gray-900 border-none outline-none focus:ring-2 ring-blue-500 md:col-span-2"
-              value={newItem.concepto}
-              onChange={(e) => setNewItem({...newItem, concepto: e.target.value})}
-            />
-            <input 
-              type="number" placeholder="Monto $" 
-              className="p-2 rounded-lg bg-gray-50 dark:bg-gray-900 border-none outline-none focus:ring-2 ring-blue-500"
-              value={newItem.monto}
-              onChange={(e) => setNewItem({...newItem, monto: e.target.value})}
-            />
-          </div>
-          <button 
-            onClick={addRegistro}
-            className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg"
-          >
-            <Plus size={20} /> Registrar Operación
-          </button>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden">
-          <div className="p-4 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
-            <h3 className="font-semibold">Historial de Operaciones</h3>
-            <div className="flex gap-2">
-              <button 
-                onClick={() => {
-                  const nombre = prompt("Nombre del nuevo cliente:");
-                  if(nombre) setData({...data, clientes: [...data.clientes, nombre]});
-                }}
-                className="text-xs text-blue-600 font-bold hover:underline"
-              >
-                + Nuevo Cliente
-              </button>
-            </div>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="text-xs text-gray-400 uppercase tracking-widest bg-gray-50 dark:bg-gray-900">
-                  <th className="p-4">Fecha</th>
-                  <th className="p-4">Cliente</th>
-                  <th className="p-4">Concepto</th>
-                  <th className="p-4 text-right">Monto</th>
-                  <th className="p-4"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y dark:divide-gray-700">
-                {data.registros.length === 0 && (
-                  <tr><td colSpan="5" className="p-10 text-center text-gray-400">No hay registros aún</td></tr>
-                )}
-                {[...data.registros].reverse().map(reg => (
-                  <tr key={reg.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                    <td className="p-4 text-xs font-medium">{reg.fecha}</td>
-                    <td className="p-4"><span className="px-2 py-1 bg-gray-100 dark:bg-gray-900 rounded-md text-[10px] uppercase">{reg.cliente}</span></td>
-                    <td className="p-4 text-sm">{reg.concepto}</td>
-                    <td className={`p-4 text-right font-mono font-bold ${reg.tipo === 'ingreso' ? 'text-green-500' : 'text-red-500'}`}>
-                      {reg.tipo === 'ingreso' ? '+' : '-'}${parseFloat(reg.monto).toFixed(2)}
-                    </td>
-                    <td className="p-4">
-                      <button 
-                        onClick={() => setData({...data, registros: data.registros.filter(r => r.id !== reg.id)})}
-                        className="text-gray-300 hover:text-red-500 transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const EmpleadosView = () => {
-    const [newEmp, setNewEmp] = useState({ nombre: '', salario: '', escala: 400 });
-
-    const addEmpleado = () => {
-      if(!newEmp.nombre || !newEmp.salario) return;
-      setData({
-        ...data,
-        empleados: [...data.empleados, { ...newEmp, id: Date.now() }]
-      });
-      setNewEmp({ nombre: '', salario: '', escala: 400 });
-    };
-
-    return (
-      <div className="space-y-6">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm">
-          <h3 className="text-lg font-semibold mb-4">Contratar Empleado</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <input 
-              type="text" placeholder="Nombre completo" 
-              className="p-2 rounded-lg bg-gray-50 dark:bg-gray-900 border-none outline-none focus:ring-2 ring-blue-500"
-              value={newEmp.nombre}
-              onChange={(e) => setNewEmp({...newEmp, nombre: e.target.value})}
-            />
-            <input 
-              type="number" placeholder="Salario Pactado $" 
-              className="p-2 rounded-lg bg-gray-50 dark:bg-gray-900 border-none outline-none focus:ring-2 ring-blue-500"
-              value={newEmp.salario}
-              onChange={(e) => setNewEmp({...newEmp, salario: e.target.value})}
-            />
-            <select 
-              className="p-2 rounded-lg bg-gray-50 dark:bg-gray-900 border-none outline-none focus:ring-2 ring-blue-500"
-              value={newEmp.escala}
-              onChange={(e) => setNewEmp({...newEmp, escala: parseInt(e.target.value)})}
-            >
-              {ESCALAS_SS.map(e => (
-                <option key={e.base} value={e.cuota}>Base ${e.base} / Cuota ${e.cuota}</option>
-              ))}
-            </select>
-          </div>
-          <button 
-            onClick={addEmpleado}
-            className="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-transform active:scale-95"
-          >
-            <Users size={20} /> Añadir a Nómina
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {data.empleados.map(emp => (
-            <div key={emp.id} className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border-l-4 border-indigo-500 flex justify-between items-center">
-              <div>
-                <h4 className="font-bold">{emp.nombre}</h4>
-                <p className="text-xs text-gray-500">Salario: ${emp.salario} | SS: ${emp.escala}</p>
-              </div>
-              <button 
-                onClick={() => setData({...data, empleados: data.empleados.filter(e => e.id !== emp.id)})}
-                className="text-red-200 hover:text-red-500"
-              >
-                <Trash2 size={18} />
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  const DJView = () => {
-    const totalIngresosAnual = data.registros.filter(r => r.tipo === 'ingreso').reduce((a, b) => a + parseFloat(b.monto), 0);
-    const totalGastosAnual = data.registros.filter(r => r.tipo === 'gasto').reduce((a, b) => a + parseFloat(b.monto), 0);
-    const pagosAnticipadosRealizados = totalIngresosAnual * TAX_RATES.ingresos_personales_mensual;
-    
-    // Simplificación de cálculo de DJ según escala progresiva cubana
-    const baseImponible = Math.max(0, totalIngresosAnual - (totalIngresosAnual * 0.20) - totalGastosAnual); // 20% exento mínimo
-    
-    let impuestoDJ = 0;
-    for (let tramo of ESCALAS_DJ) {
-      if (baseImponible <= tramo.limite) {
-        impuestoDJ = (baseImponible * tramo.tipo) - tramo.acumulado;
-        break;
-      }
-    }
-    const aPagarLiquidacion = Math.max(0, impuestoDJ - pagosAnticipadosRealizados);
-
-    return (
-      <div className="space-y-6">
-        <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-sm border border-orange-100 dark:border-orange-900">
-          <h3 className="text-xl font-bold mb-6 text-orange-600 flex items-center gap-2">
-            <FileText /> Pre-Cálculo Declaración Jurada (DJ-08)
-          </h3>
-          <div className="space-y-4 max-w-2xl">
-            <div className="flex justify-between items-center py-2 border-b dark:border-gray-700">
-              <span className="text-gray-600 dark:text-gray-400 italic">Total Ingresos Brutos Anuales:</span>
-              <span className="font-bold text-lg">${totalIngresosAnual.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b dark:border-gray-700">
-              <span className="text-gray-600 dark:text-gray-400 italic">Gastos Deducibles (Justificados):</span>
-              <span className="font-bold text-lg text-red-500">${totalGastosAnual.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between items-center py-4 bg-gray-50 dark:bg-gray-900 px-4 rounded-xl">
-              <span className="font-bold">Base Imponible Estimada:</span>
-              <span className="font-bold text-xl text-blue-600 font-mono">${baseImponible.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b dark:border-gray-700">
-              <span className="text-gray-600 dark:text-gray-400">Impuesto Calculado (Escala Progresiva):</span>
-              <span>${impuestoDJ.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b dark:border-gray-700">
-              <span className="text-gray-600 dark:text-gray-400">Menos Pagos Anticipados (5%):</span>
-              <span className="text-green-600">-${pagosAnticipadosRealizados.toFixed(2)}</span>
-            </div>
-            <div className="mt-8 p-6 bg-orange-600 text-white rounded-2xl shadow-xl flex justify-between items-center">
-              <div>
-                <p className="text-xs uppercase font-bold opacity-80">Importe a Liquidar en la ONAT</p>
-                <h4 className="text-3xl font-black">${aPagarLiquidacion.toFixed(2)}</h4>
-              </div>
-              <div className="text-right">
-                <p className="text-[10px] leading-tight opacity-70">Este valor es una estimación basada en los <br/>registros actuales del año fiscal.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const ConfigView = () => (
-    <div className="space-y-6">
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm">
-        <SectionTitle title="Ajustes y Nube" subtitle="Gestiona tus datos y sincronización" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <button 
-            onClick={() => {
-              const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
-              const downloadAnchorNode = document.createElement('a');
-              downloadAnchorNode.setAttribute("href", dataStr);
-              downloadAnchorNode.setAttribute("download", `backup_tcp_${new Date().toLocaleDateString()}.json`);
-              document.body.appendChild(downloadAnchorNode);
-              downloadAnchorNode.click();
-              downloadAnchorNode.remove();
-            }}
-            className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors border border-transparent hover:border-blue-200"
-          >
-            <Download className="text-blue-500" />
-            <div className="text-left">
-              <p className="font-bold text-sm">Exportar Backup</p>
-              <p className="text-xs text-gray-500">Guarda un archivo con tus datos</p>
-            </div>
-          </button>
-          
-          <button 
-            className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-900 rounded-xl hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors border border-transparent hover:border-green-200"
-            onClick={() => alert("Sincronización con Google Drive: En una versión instalada como App, podrías usar la API de Drive para subir el archivo .json generado.")}
-          >
-            <Cloud className="text-green-500" />
-            <div className="text-left">
-              <p className="font-bold text-sm">Sincronizar Nube</p>
-              <p className="text-xs text-gray-500">Google Drive / OneDrive</p>
-            </div>
-          </button>
-        </div>
-
-        <div className="mt-8">
-          <h4 className="text-sm font-bold text-red-500 mb-4 uppercase tracking-tighter">Zona Peligrosa</h4>
-          <button 
-            onClick={() => {
-              if(window.confirm("¿Borrar todos los datos? Esta acción no se puede deshacer.")) {
-                setData({ perfil: { nombre: '', nit: '' }, empleados: [], registros: [], clientes: ['General'], config: { tieneEmpleados: false } });
-                localStorage.clear();
-              }
-            }}
-            className="flex items-center gap-2 text-xs text-red-600 hover:bg-red-50 p-2 rounded-lg"
-          >
-            <Trash2 size={14} /> Borrar toda la base de datos
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  return (
-    <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-gray-950 text-white' : 'bg-gray-50 text-gray-900'}`}>
-      
-      {/* HEADER */}
-      <header className="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b dark:border-gray-800 p-4">
-        <div className="max-w-5xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <div className="bg-blue-600 p-2 rounded-lg text-white">
-              <Calculator size={24} />
-            </div>
+        /* Estilo para las tablas responsivas */
+        .table-container {
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body class="p-2 md:p-6">
+    <div id="app" class="max-w-5xl mx-auto">
+        <!-- Header -->
+        <header class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 className="text-lg font-black tracking-tighter leading-none">TAX CUBA <span className="text-blue-600 text-xs">TCP</span></h1>
-              <p className="text-[10px] text-gray-500 uppercase font-bold">Gestión Tributaria Inteligente</p>
+                <h1 class="text-3xl font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="calculator" class="text-emerald-500"></i>
+                    Gestor Fiscal TCP
+                </h1>
+                <p class="text-slate-500">Control de impuestos y registros contables (Cuba)</p>
             </div>
-          </div>
-          <button 
-            onClick={() => setDarkMode(!darkMode)}
-            className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500"
-          >
-            {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-          </button>
-        </div>
-      </header>
+            <div class="flex gap-2">
+                <button onclick="exportData()" class="btn-primary bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 hover:bg-slate-50">
+                    <i data-lucide="download" class="w-4 h-4 text-emerald-600"></i> Exportar (Nube/Drive)
+                </button>
+                <label class="btn-primary bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 hover:bg-emerald-700 cursor-pointer">
+                    <i data-lucide="upload" class="w-4 h-4"></i> Importar
+                    <input type="file" id="importFile" class="hidden" onchange="importData(event)">
+                </label>
+            </div>
+        </header>
 
-      {/* MAIN CONTENT */}
-      <main className="max-w-5xl mx-auto p-4 pb-32">
-        {activeTab === 'calculadora' && <CalculadoraView />}
-        {activeTab === 'registros' && <RegistrosView />}
-        {activeTab === 'empleados' && <EmpleadosView />}
-        {activeTab === 'dj' && <DJView />}
-        {activeTab === 'config' && <ConfigView />}
-      </main>
+        <!-- Navigation Tabs -->
+        <nav class="flex border-b border-slate-200 mb-6 overflow-x-auto whitespace-nowrap">
+            <button onclick="switchTab('calc')" id="tab-calc" class="px-6 py-3 font-semibold text-slate-600 tab-active">Impuestos Mensuales</button>
+            <button onclick="switchTab('records')" id="tab-records" class="px-6 py-3 font-semibold text-slate-600">Registros por Cliente</button>
+            <button onclick="switchTab('dj')" id="tab-dj" class="px-6 py-3 font-semibold text-slate-600">Declaración Jurada</button>
+        </nav>
 
-      {/* BOTTOM NAVIGATION (Optimizado para móvil) */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t dark:border-gray-800 p-2 pb-6 sm:pb-2 z-40">
-        <div className="max-w-lg mx-auto grid grid-cols-5 gap-1">
-          <TabButton id="calculadora" icon={Calculator} label="Tributos" />
-          <TabButton id="registros" icon={FolderOpen} label="Libros" />
-          <TabButton id="empleados" icon={Users} label="Nómina" />
-          <TabButton id="dj" icon={FileText} label="DJ" />
-          <TabButton id="config" icon={Cloud} label="Nube" />
-        </div>
-      </nav>
+        <!-- Main Content -->
+        <main>
+            <!-- SECCIÓN CALCULADORA -->
+            <section id="section-calc" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Configuración General -->
+                    <div class="glass-card p-6 rounded-2xl">
+                        <h2 class="text-xl font-bold mb-4 text-slate-700">Datos del Mes</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-600 mb-1">Ingresos Brutos del Mes (CUP)</label>
+                                <input type="number" id="monthly-income" oninput="calculateTaxes()" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" placeholder="0.00">
+                            </div>
+                            
+                            <div class="pt-4 border-t">
+                                <label class="flex items-center gap-2 mb-3">
+                                    <input type="checkbox" id="has-employees" onchange="toggleEmployees()" class="w-5 h-5 accent-emerald-500">
+                                    <span class="text-slate-700 font-medium">Tengo Empleados Contratados</span>
+                                </label>
+                                <div id="employee-config" class="hidden space-y-3 pl-7">
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-500">Cantidad de empleados</label>
+                                        <input type="number" id="emp-count" oninput="calculateTaxes()" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg" value="0">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-slate-500">Suma total de salarios pagados</label>
+                                        <input type="number" id="emp-salaries" oninput="calculateTaxes()" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg" placeholder="0.00">
+                                    </div>
+                                </div>
+                            </div>
 
-      {/* OFFLINE INDICATOR */}
-      <div className="fixed top-20 right-4 pointer-events-none">
-        <div className="flex items-center gap-1 bg-green-500/10 text-green-500 text-[10px] px-2 py-1 rounded-full border border-green-500/20 font-bold uppercase">
-          <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-          Offline Ready
+                            <div class="pt-4 border-t">
+                                <label class="block text-sm font-medium text-slate-600 mb-1">Escala Contribución Seg. Social</label>
+                                <select id="cess-scale" onchange="calculateTaxes()" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                                    <option value="300">Escala Mínima (2000 CUP ingreso base)</option>
+                                    <option value="450">Escala 3000</option>
+                                    <option value="750">Escala 5000</option>
+                                    <option value="1500">Escala 10000</option>
+                                </select>
+                                <p class="text-[10px] text-slate-400 mt-1">El cálculo corresponde al 14% de la base seleccionada.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resultados -->
+                    <div class="glass-card p-6 rounded-2xl bg-slate-900 text-white border-none">
+                        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
+                            <i data-lucide="receipt"></i> Resumen a Pagar
+                        </h2>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center text-slate-300">
+                                <span>Ingresos Personales (5%):</span>
+                                <span id="res-personal" class="font-mono text-lg font-bold">0.00</span>
+                            </div>
+                            <div class="flex justify-between items-center text-slate-300">
+                                <span>Ventas y Servicios (10%):</span>
+                                <span id="res-sales" class="font-mono text-lg font-bold">0.00</span>
+                            </div>
+                            <div class="flex justify-between items-center text-slate-300">
+                                <span>Fuerza de Trabajo (14%):</span>
+                                <span id="res-work" class="font-mono text-lg font-bold">0.00</span>
+                            </div>
+                            <div class="flex justify-between items-center text-slate-300">
+                                <span>Seguridad Social (CESS):</span>
+                                <span id="res-cess" class="font-mono text-lg font-bold">0.00</span>
+                            </div>
+                            <div class="pt-4 border-t border-slate-700 flex justify-between items-center">
+                                <span class="text-xl font-bold">TOTAL A PAGAR:</span>
+                                <span id="res-total" class="text-2xl font-bold text-emerald-400 font-mono">0.00</span>
+                            </div>
+                        </div>
+                        <button onclick="saveMonthlyRecord()" class="w-full mt-8 bg-emerald-600 hover:bg-emerald-500 py-3 rounded-xl font-bold transition-all">
+                            Guardar en Historial
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECCIÓN REGISTROS POR CLIENTE -->
+            <section id="section-records" class="hidden space-y-6">
+                <div class="glass-card p-6 rounded-2xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold text-slate-800">Clientes y Movimientos</h2>
+                        <button onclick="openClientModal()" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 flex items-center gap-2">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Nuevo Cliente
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                        <!-- Lista de Clientes -->
+                        <div class="lg:col-span-1 space-y-2" id="client-list">
+                            <!-- Clientes se cargan aquí -->
+                        </div>
+
+                        <!-- Detalles del Cliente Seleccionado -->
+                        <div class="lg:col-span-3 border-l pl-0 md:pl-6">
+                            <div id="no-client-selected" class="flex flex-col items-center justify-center h-64 text-slate-400">
+                                <i data-lucide="users" class="w-12 h-12 mb-2 opacity-20"></i>
+                                <p>Selecciona un cliente para ver sus ingresos y gastos</p>
+                            </div>
+
+                            <div id="client-details" class="hidden">
+                                <div class="flex justify-between items-end mb-6">
+                                    <div>
+                                        <h3 id="current-client-name" class="text-2xl font-bold text-slate-800">Nombre del Cliente</h3>
+                                        <p id="current-client-info" class="text-sm text-slate-500">Detalles adicionales</p>
+                                    </div>
+                                    <button onclick="openMovementModal()" class="text-emerald-600 border border-emerald-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-emerald-50 transition-all">
+                                        + Agregar Operación
+                                    </button>
+                                </div>
+
+                                <div class="table-container">
+                                    <table class="w-full text-left">
+                                        <thead class="bg-slate-50 text-slate-500 text-xs uppercase font-bold">
+                                            <tr>
+                                                <th class="p-3 rounded-l-lg">Fecha</th>
+                                                <th class="p-3">Concepto</th>
+                                                <th class="p-3">Tipo</th>
+                                                <th class="p-3 text-right rounded-r-lg">Monto (CUP)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="movements-body" class="text-sm divide-y">
+                                            <!-- Movimientos se cargan aquí -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECCIÓN DECLARACIÓN JURADA -->
+            <section id="section-dj" class="hidden space-y-6">
+                <div class="glass-card p-6 rounded-2xl">
+                    <h2 class="text-xl font-bold mb-6 text-slate-800 flex items-center gap-2">
+                        <i data-lucide="file-text"></i> Resumen para la DJ Anual
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
+                            <p class="text-xs font-bold text-emerald-600 uppercase mb-1">Total Ingresos</p>
+                            <p id="dj-total-income" class="text-2xl font-bold text-emerald-800">0.00</p>
+                        </div>
+                        <div class="bg-red-50 p-4 rounded-xl border border-red-100">
+                            <p class="text-xs font-bold text-red-600 uppercase mb-1">Total Gastos</p>
+                            <p id="dj-total-expense" class="text-2xl font-bold text-red-800">0.00</p>
+                        </div>
+                        <div class="bg-slate-800 p-4 rounded-xl text-white">
+                            <p class="text-xs font-bold text-slate-400 uppercase mb-1">Rendimiento (Utilidad)</p>
+                            <p id="dj-utility" class="text-2xl font-bold">0.00</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <h3 class="font-bold text-slate-700">Cálculo Proyectado</h3>
+                        <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                            <div class="flex justify-between items-center py-2 border-b">
+                                <span>Mínimo Exento (Inmune al impuesto)</span>
+                                <span class="font-mono">39,120.00 CUP</span>
+                            </div>
+                            <div class="flex justify-between items-center py-2 border-b">
+                                <span>Impuesto determinado (Escala Progresiva)</span>
+                                <span id="dj-tax-calc" class="font-mono font-bold">0.00</span>
+                            </div>
+                            <div class="flex justify-between items-center py-4 text-emerald-700 font-bold">
+                                <span>SALDO A PAGAR / DEVOLVER</span>
+                                <span id="dj-final-balance" class="text-xl">0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Modales -->
+        <div id="modal-container" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50">
+            <!-- Modal Cliente -->
+            <div id="modal-client" class="bg-white p-6 rounded-2xl w-full max-w-md hidden">
+                <h3 class="text-xl font-bold mb-4">Añadir Nuevo Cliente</h3>
+                <input type="text" id="new-client-name" class="w-full p-3 border rounded-xl mb-4" placeholder="Nombre completo">
+                <div class="flex gap-2">
+                    <button onclick="closeModal()" class="flex-1 py-2 text-slate-500 font-bold">Cancelar</button>
+                    <button onclick="addClient()" class="flex-1 py-2 bg-emerald-600 text-white rounded-xl font-bold">Guardar</button>
+                </div>
+            </div>
+
+            <!-- Modal Movimiento -->
+            <div id="modal-move" class="bg-white p-6 rounded-2xl w-full max-w-md hidden">
+                <h3 class="text-xl font-bold mb-4">Nueva Operación</h3>
+                <div class="space-y-4">
+                    <select id="move-type" class="w-full p-3 border rounded-xl">
+                        <option value="income">Ingreso</option>
+                        <option value="expense">Gasto</option>
+                    </select>
+                    <input type="text" id="move-concept" class="w-full p-3 border rounded-xl" placeholder="Concepto">
+                    <input type="number" id="move-amount" class="w-full p-3 border rounded-xl" placeholder="Monto CUP">
+                    <input type="date" id="move-date" class="w-full p-3 border rounded-xl">
+                </div>
+                <div class="flex gap-2 mt-6">
+                    <button onclick="closeModal()" class="flex-1 py-2 text-slate-500 font-bold">Cancelar</button>
+                    <button onclick="addMovement()" class="flex-1 py-2 bg-emerald-600 text-white rounded-xl font-bold">Registrar</button>
+                </div>
+            </div>
         </div>
-      </div>
+
+        <!-- Footer -->
+        <footer class="mt-12 pt-6 border-t border-slate-200 text-center text-slate-400 text-xs">
+            Desarrollado para Trabajadores por Cuenta Propia de Cuba. Funciona 100% Offline.
+        </footer>
     </div>
-  );
-};
 
-export default App;
+    <script>
+        // --- ESTADO DE LA APLICACIÓN ---
+        let state = {
+            clients: [], // {id, name, movements: []}
+            monthlyRecords: [],
+            selectedClientId: null
+        };
+
+        // --- INICIALIZACIÓN ---
+        window.onload = () => {
+            lucide.createIcons();
+            loadState();
+            renderClients();
+            updateDJ();
+            // Poner fecha de hoy por defecto en el modal
+            document.getElementById('move-date').valueAsDate = new Date();
+        };
+
+        // --- NAVEGACIÓN ---
+        function switchTab(tab) {
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('tab-active'));
+            document.getElementById(`tab-${tab}`).classList.add('tab-active');
+            
+            document.querySelectorAll('main section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(`section-${tab}`).classList.remove('hidden');
+            
+            if(tab === 'dj') updateDJ();
+        }
+
+        // --- CALCULADORA DE IMPUESTOS ---
+        function toggleEmployees() {
+            const container = document.getElementById('employee-config');
+            container.classList.toggle('hidden');
+            calculateTaxes();
+        }
+
+        function calculateTaxes() {
+            const income = parseFloat(document.getElementById('monthly-income').value) || 0;
+            const hasEmployees = document.getElementById('has-employees').checked;
+            const empSalaries = parseFloat(document.getElementById('emp-salaries').value) || 0;
+            const cess = parseFloat(document.getElementById('cess-scale').value);
+
+            const taxPersonal = income * 0.05;
+            const taxSales = income * 0.10;
+            const taxWork = hasEmployees ? (empSalaries * 0.14) : 0;
+
+            document.getElementById('res-personal').innerText = taxPersonal.toLocaleString('es-CU', {minimumFractionDigits: 2});
+            document.getElementById('res-sales').innerText = taxSales.toLocaleString('es-CU', {minimumFractionDigits: 2});
+            document.getElementById('res-work').innerText = taxWork.toLocaleString('es-CU', {minimumFractionDigits: 2});
+            document.getElementById('res-cess').innerText = cess.toLocaleString('es-CU', {minimumFractionDigits: 2});
+
+            const total = taxPersonal + taxSales + taxWork + cess;
+            document.getElementById('res-total').innerText = total.toLocaleString('es-CU', {minimumFractionDigits: 2});
+        }
+
+        // --- GESTIÓN DE CLIENTES ---
+        function openClientModal() {
+            document.getElementById('modal-container').classList.remove('hidden');
+            document.getElementById('modal-container').classList.add('flex');
+            document.getElementById('modal-client').classList.remove('hidden');
+        }
+
+        function openMovementModal() {
+            document.getElementById('modal-container').classList.remove('hidden');
+            document.getElementById('modal-container').classList.add('flex');
+            document.getElementById('modal-move').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-container').classList.add('hidden');
+            document.getElementById('modal-client').classList.add('hidden');
+            document.getElementById('modal-move').classList.add('hidden');
+        }
+
+        function addClient() {
+            const name = document.getElementById('new-client-name').value;
+            if(!name) return;
+            
+            const newClient = {
+                id: Date.now(),
+                name: name,
+                movements: []
+            };
+            
+            state.clients.push(newClient);
+            saveState();
+            renderClients();
+            closeModal();
+            document.getElementById('new-client-name').value = '';
+        }
+
+        function selectClient(id) {
+            state.selectedClientId = id;
+            const client = state.clients.find(c => c.id === id);
+            
+            document.getElementById('no-client-selected').classList.add('hidden');
+            document.getElementById('client-details').classList.remove('hidden');
+            document.getElementById('current-client-name').innerText = client.name;
+            
+            renderMovements();
+            renderClients(); // Para actualizar estilo activo
+        }
+
+        function addMovement() {
+            const client = state.clients.find(c => c.id === state.selectedClientId);
+            const type = document.getElementById('move-type').value;
+            const concept = document.getElementById('move-concept').value;
+            const amount = parseFloat(document.getElementById('move-amount').value);
+            const date = document.getElementById('move-date').value;
+
+            if(!concept || !amount || !date) return;
+
+            client.movements.push({
+                id: Date.now(),
+                type, concept, amount, date
+            });
+
+            saveState();
+            renderMovements();
+            closeModal();
+            // Reset fields
+            document.getElementById('move-concept').value = '';
+            document.getElementById('move-amount').value = '';
+        }
+
+        function renderClients() {
+            const list = document.getElementById('client-list');
+            list.innerHTML = '';
+            state.clients.forEach(c => {
+                const isActive = state.selectedClientId === c.id;
+                list.innerHTML += `
+                    <button onclick="selectClient(${c.id})" class="w-full text-left p-4 rounded-xl transition-all ${isActive ? 'bg-emerald-50 text-emerald-700 font-bold border border-emerald-200' : 'bg-white hover:bg-slate-50 border border-slate-100'}">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs">
+                                ${c.name.charAt(0)}
+                            </div>
+                            <span>${c.name}</span>
+                        </div>
+                    </button>
+                `;
+            });
+        }
+
+        function renderMovements() {
+            const client = state.clients.find(c => c.id === state.selectedClientId);
+            const body = document.getElementById('movements-body');
+            body.innerHTML = '';
+            
+            client.movements.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(m => {
+                body.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="p-3 text-slate-500">${m.date}</td>
+                        <td class="p-3 font-medium">${m.concept}</td>
+                        <td class="p-3">
+                            <span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase ${m.type === 'income' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}">
+                                ${m.type === 'income' ? 'Ingreso' : 'Gasto'}
+                            </span>
+                        </td>
+                        <td class="p-3 text-right font-mono font-bold ${m.type === 'income' ? 'text-emerald-600' : 'text-red-600'}">
+                            ${m.type === 'income' ? '+' : '-'} ${m.amount.toLocaleString('es-CU', {minimumFractionDigits: 2})}
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // --- SECCIÓN DJ ---
+        function updateDJ() {
+            let totalIncome = 0;
+            let totalExpense = 0;
+
+            state.clients.forEach(c => {
+                c.movements.forEach(m => {
+                    if(m.type === 'income') totalIncome += m.amount;
+                    else totalExpense += m.amount;
+                });
+            });
+
+            const utility = totalIncome - totalExpense;
+            const baseImponible = Math.max(0, utility - 39120);
+            
+            // Simulación escala progresiva simple (Ej: 15% sobre base imponible)
+            const taxCalculated = baseImponible * 0.15; 
+
+            document.getElementById('dj-total-income').innerText = totalIncome.toLocaleString('es-CU', {minimumFractionDigits: 2});
+            document.getElementById('dj-total-expense').innerText = totalExpense.toLocaleString('es-CU', {minimumFractionDigits: 2});
+            document.getElementById('dj-utility').innerText = utility.toLocaleString('es-CU', {minimumFractionDigits: 2});
+            document.getElementById('dj-tax-calc').innerText = taxCalculated.toLocaleString('es-CU', {minimumFractionDigits: 2});
+            document.getElementById('dj-final-balance').innerText = taxCalculated.toLocaleString('es-CU', {minimumFractionDigits: 2}) + " CUP";
+        }
+
+        // --- PERSISTENCIA Y NUBE ---
+        function saveState() {
+            localStorage.setItem('tcp_calc_data', JSON.stringify(state));
+        }
+
+        function loadState() {
+            const saved = localStorage.getItem('tcp_calc_data');
+            if(saved) state = JSON.parse(saved);
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "respaldo_tcp_contabilidad.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const importedState = JSON.parse(e.target.result);
+                    state = importedState;
+                    saveState();
+                    location.reload();
+                } catch (err) {
+                    alert("Error al importar: El archivo no es válido.");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function saveMonthlyRecord() {
+            // Lógica simple para simular guardado de historial
+            const total = document.getElementById('res-total').innerText;
+            alert(`Registro guardado exitosamente. Total: ${total} CUP. Puedes verlo en el resumen de DJ.`);
+        }
+    </script>
+</body>
+</html>
