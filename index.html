@@ -575,7 +575,7 @@
             </div>
         </section>
 
-        <!-- SECCIÓN: DJ ANUAL (ACTUALIZADA CON AÑOS 2025-2026) -->
+        <!-- SECCIÓN: DJ ANUAL -->
         <section id="section-dj" class="hidden">
             <div class="section-card">
                 <h2 class="text-lg font-bold text-slate-700 dark:text-white mb-6 flex items-center gap-2">
@@ -763,7 +763,7 @@
         </footer>
     </div>
 
-    <!-- Botón flotante para instalar - CORREGIDO -->
+    <!-- Botón flotante para instalar -->
     <div id="install-button" class="fixed bottom-4 right-4 hidden">
         <button onclick="showInstallInstructions()" class="bg-blue-600 text-white px-4 py-3 rounded-full shadow-lg flex items-center gap-2 hover:bg-blue-700 transition-all">
             <i data-lucide="download" class="w-5 h-5"></i>
@@ -799,9 +799,7 @@
                 darkMode: false
             }
         };
-        
-        let saveTimeout;
-        
+
         // Variable para instalación PWA
         let deferredPrompt;
 
@@ -828,10 +826,9 @@
         // --- FUNCIÓN DE GUARDADO CORREGIDA ---
         function save(showNotification = false) {
             try {
-                // Guardar inmediatamente sin timeout
+                // Guardar inmediatamente sin compresión para evitar errores
                 const jsonString = JSON.stringify(state);
-                const compressed = 'COMPRESSED:' + LZString.compress(jsonString);
-                localStorage.setItem('tcp_data_v4', compressed);
+                localStorage.setItem('tcp_data_v4', jsonString);
                 
                 // Actualizar indicador visual
                 const indicator = document.getElementById('save-indicator');
@@ -852,9 +849,20 @@
                         showConfirmButton: false
                     });
                 }
+                
+                return true;
             } catch(e) {
                 console.error('Error saving:', e);
-                Swal.fire('Error', 'No se pudo guardar los datos', 'error');
+                
+                // Mostrar error específico
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error al guardar',
+                    text: 'No se pudo guardar los datos. Posiblemente el almacenamiento está lleno.',
+                    confirmButtonText: 'OK'
+                });
+                
+                return false;
             }
         }
 
@@ -862,23 +870,11 @@
             try {
                 const saved = localStorage.getItem('tcp_data_v4');
                 if(saved) {
-                    if(saved.startsWith('COMPRESSED:')) {
-                        const compressed = saved.substring(10);
-                        const decompressed = LZString.decompress(compressed);
-                        if(decompressed) {
-                            const loadedState = JSON.parse(decompressed);
-                            state.clients = loadedState.clients || [];
-                            state.taxPayments = loadedState.taxPayments || [];
-                            state.selectedClientId = loadedState.selectedClientId || null;
-                            state.config = loadedState.config || { hasEmployees: false, darkMode: false };
-                        }
-                    } else {
-                        const loadedState = JSON.parse(saved);
-                        state.clients = loadedState.clients || [];
-                        state.taxPayments = loadedState.taxPayments || [];
-                        state.selectedClientId = loadedState.selectedClientId || null;
-                        state.config = loadedState.config || { hasEmployees: false, darkMode: false };
-                    }
+                    const loadedState = JSON.parse(saved);
+                    state.clients = loadedState.clients || [];
+                    state.taxPayments = loadedState.taxPayments || [];
+                    state.selectedClientId = loadedState.selectedClientId || null;
+                    state.config = loadedState.config || { hasEmployees: false, darkMode: false };
                 }
             } catch(e) {
                 console.error('Error loading state:', e);
@@ -902,7 +898,7 @@
             }
         }
 
-        // --- INSTALACIÓN PWA - CORREGIDO ---
+        // --- INSTALACIÓN PWA ---
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
