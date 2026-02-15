@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestor Fiscal TCP Pro - Cuba</title>
+    
+    <!-- Para PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Gestor TCP">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.js"></script>
     <!-- SweetAlert2 para diálogos modernos -->
@@ -236,10 +245,16 @@
 <body class="p-4 md:p-8">
     <div id="app" class="max-w-6xl mx-auto">
         
-        <!-- Header con más opciones -->
+        <!-- Header con logo personalizado -->
         <header class="flex flex-wrap justify-between items-center mb-8 gap-2">
             <h1 class="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                <i data-lucide="calculator" class="w-6 h-6 text-blue-600"></i>
+                <!-- Logo SVG incluido directamente -->
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-8 h-8">
+                    <rect width="32" height="32" rx="8" fill="#2563EB"/>
+                    <path d="M8 16L14 22L24 10" stroke="white" stroke-width="3" stroke-linecap="round"/>
+                    <circle cx="24" cy="8" r="2" fill="white"/>
+                    <circle cx="8" cy="24" r="2" fill="white"/>
+                </svg>
                 Gestor Fiscal TCP Pro
             </h1>
             <div class="flex gap-2">
@@ -397,7 +412,7 @@
                     </button>
                 </div>
 
-                <div class="flex gap-2 overflow-x-auto pb-4 mb-4" id="client-tags">
+                <div class="flex gap-2 overflow-x-auto pb-4 mb-4 flex-wrap" id="client-tags">
                     <!-- Clientes como etiquetas -->
                 </div>
 
@@ -498,6 +513,8 @@
                         <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Año</label>
                         <select id="tax-filter-year" class="input-field text-sm" onchange="filterTaxes()">
                             <option value="all">Todos los años</option>
+                            <option value="2026">2026</option>
+                            <option value="2025">2025</option>
                             <option value="2024">2024</option>
                             <option value="2023">2023</option>
                         </select>
@@ -558,7 +575,7 @@
             </div>
         </section>
 
-        <!-- SECCIÓN: DJ ANUAL -->
+        <!-- SECCIÓN: DJ ANUAL (ACTUALIZADA CON AÑOS 2025-2026) -->
         <section id="section-dj" class="hidden">
             <div class="section-card">
                 <h2 class="text-lg font-bold text-slate-700 dark:text-white mb-6 flex items-center gap-2">
@@ -577,6 +594,8 @@
                     <div>
                         <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Año</label>
                         <select id="dj-year" class="input-field" onchange="calculateDJ()">
+                            <option value="2026">2026</option>
+                            <option value="2025">2025</option>
                             <option value="2024">2024</option>
                             <option value="2023">2023</option>
                         </select>
@@ -642,6 +661,8 @@
                         <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Período</label>
                         <select id="report-period" class="input-field" onchange="loadClientReport()">
                             <option value="all">Todo el historial</option>
+                            <option value="2026">Año 2026</option>
+                            <option value="2025">Año 2025</option>
                             <option value="2024">Año 2024</option>
                             <option value="2023">Año 2023</option>
                             <option value="month">Este mes</option>
@@ -738,8 +759,16 @@
         </section>
 
         <footer class="text-center text-[10px] text-slate-400 mt-10">
-            &copy; 2024 Gestor Fiscal TCP Pro. Funciona sin conexión.
+            &copy; 2026 Gestor Fiscal TCP Pro. Funciona sin conexión.
         </footer>
+    </div>
+
+    <!-- Botón flotante para instalar -->
+    <div id="install-button" class="fixed bottom-4 right-4 hidden">
+        <button onclick="installApp()" class="bg-blue-600 text-white px-4 py-3 rounded-full shadow-lg flex items-center gap-2 hover:bg-blue-700 transition-all">
+            <i data-lucide="download" class="w-5 h-5"></i>
+            <span>Instalar App</span>
+        </button>
     </div>
 
     <script>
@@ -760,10 +789,10 @@
             { min: 120000, max: Infinity, rate: 0.30, base: 16698 }
         ];
 
-        // --- ESTADO ---
+        // --- ESTADO INICIAL CORREGIDO ---
         let state = {
             clients: [], // {id, name, movements: []}
-            taxPayments: [], // Nuevo: registro de impuestos pagados por cliente
+            taxPayments: [], // Registro de impuestos pagados por cliente
             selectedClientId: null,
             config: {
                 hasEmployees: false,
@@ -777,25 +806,31 @@
         // Variables para gráficos
         let incomeExpenseChart = null;
         let taxBreakdownChart = null;
+        
+        // Variable para instalación PWA
+        let deferredPrompt;
 
-        // --- INICIO ---
+        // --- INICIO CORREGIDO ---
         window.onload = () => {
             lucide.createIcons();
-            loadState();
-            renderClients();
-            updateClientSelects();
+            loadState(); // Primero cargamos el estado guardado
+            renderClients(); // Luego renderizamos los clientes
+            updateClientSelects(); // Actualizamos los selects
             calculateTaxes();
             updateSaveIndicator();
             
             // Configurar fecha actual
             const today = new Date().toISOString().split('T')[0];
-            document.getElementById('move-date').value = today;
+            const dateInput = document.getElementById('move-date');
+            if(dateInput) dateInput.value = today;
             
             // Restaurar tema oscuro
-            if(state.config.darkMode) {
+            if(state.config && state.config.darkMode) {
                 document.body.classList.add('dark');
                 updateDarkModeIcon();
             }
+            
+            console.log('App iniciada correctamente');
         };
 
         function loadState() {
@@ -807,20 +842,28 @@
                         const compressed = saved.substring(10);
                         const decompressed = LZString.decompress(compressed);
                         if(decompressed) {
-                            state = JSON.parse(decompressed);
+                            const loadedState = JSON.parse(decompressed);
+                            // Actualizar el estado con los datos guardados
+                            state.clients = loadedState.clients || [];
+                            state.taxPayments = loadedState.taxPayments || [];
+                            state.selectedClientId = loadedState.selectedClientId || null;
+                            state.config = loadedState.config || { hasEmployees: false, darkMode: false };
                         }
                     } else {
-                        state = JSON.parse(saved);
+                        const loadedState = JSON.parse(saved);
+                        state.clients = loadedState.clients || [];
+                        state.taxPayments = loadedState.taxPayments || [];
+                        state.selectedClientId = loadedState.selectedClientId || null;
+                        state.config = loadedState.config || { hasEmployees: false, darkMode: false };
                     }
-                }
-                
-                // Inicializar taxPayments si no existe
-                if(!state.taxPayments) {
-                    state.taxPayments = [];
                 }
             } catch(e) {
                 console.error('Error loading state:', e);
-                Swal.fire('Error', 'No se pudo cargar los datos guardados', 'error');
+                // Si hay error, mantener el estado inicial vacío
+                state.clients = [];
+                state.taxPayments = [];
+                state.selectedClientId = null;
+                state.config = { hasEmployees: false, darkMode: false };
             }
         }
 
@@ -858,6 +901,8 @@
 
         function updateSaveIndicator() {
             const indicator = document.getElementById('save-indicator');
+            if(!indicator) return;
+            
             const icon = indicator.querySelector('i');
             const text = indicator.querySelector('span');
             
@@ -873,6 +918,7 @@
 
         // --- TEMA OSCURO ---
         function toggleDarkMode() {
+            if(!state.config) state.config = {};
             state.config.darkMode = !state.config.darkMode;
             document.body.classList.toggle('dark', state.config.darkMode);
             updateDarkModeIcon();
@@ -886,6 +932,32 @@
                 lucide.createIcons();
             }
         }
+
+        // --- INSTALACIÓN PWA ---
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('install-button').classList.remove('hidden');
+        });
+        
+        window.installApp = async () => {
+            if (!deferredPrompt) return;
+            
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            
+            if (outcome === 'accepted') {
+                console.log('Usuario aceptó instalar');
+            }
+            
+            deferredPrompt = null;
+            document.getElementById('install-button').classList.add('hidden');
+        };
+        
+        window.addEventListener('appinstalled', () => {
+            console.log('App instalada');
+            document.getElementById('install-button').classList.add('hidden');
+        });
 
         // --- NAVEGACIÓN ---
         function switchTab(tabId) {
@@ -912,6 +984,7 @@
 
         // --- CALCULADORA ---
         function toggleEmployees() {
+            if(!state.config) state.config = {};
             state.config.hasEmployees = document.getElementById('has-employees').checked;
             document.getElementById('employee-inputs').classList.toggle('hidden', !state.config.hasEmployees);
             document.getElementById('row-work').classList.toggle('hidden', !state.config.hasEmployees);
@@ -921,14 +994,14 @@
         }
 
         function calculateTaxes() {
-            const income = parseFloat(document.getElementById('monthly-income').value) || 0;
-            const empSalaries = parseFloat(document.getElementById('emp-salaries').value) || 0;
-            const cess = parseFloat(document.getElementById('cess-scale').value);
+            const income = parseFloat(document.getElementById('monthly-income')?.value) || 0;
+            const empSalaries = parseFloat(document.getElementById('emp-salaries')?.value) || 0;
+            const cess = parseFloat(document.getElementById('cess-scale')?.value) || 0;
 
             const vta = income * TAX_RATES.ventas;
             const personal = income * TAX_RATES.ingresos_personales;
-            const work = state.config.hasEmployees ? (empSalaries * TAX_RATES.fuerza_trabajo) : 0;
-            const ssEmpl = state.config.hasEmployees ? (empSalaries * TAX_RATES.seguridad_social_empleador) : 0;
+            const work = (state.config && state.config.hasEmployees) ? (empSalaries * TAX_RATES.fuerza_trabajo) : 0;
+            const ssEmpl = (state.config && state.config.hasEmployees) ? (empSalaries * TAX_RATES.seguridad_social_empleador) : 0;
 
             document.getElementById('res-sales').innerText = vta.toFixed(2);
             document.getElementById('res-personal').innerText = personal.toFixed(2);
@@ -942,7 +1015,7 @@
             return { vta, personal, work, ssEmpl, cess, total };
         }
 
-        // --- NUEVA FUNCIÓN: Registrar pago de impuestos por cliente ---
+        // --- REGISTRAR PAGO DE IMPUESTOS ---
         function registerTaxPayment() {
             const clientId = document.getElementById('tax-client').value;
             if(!clientId) {
@@ -951,6 +1024,11 @@
             }
             
             const client = state.clients.find(c => c.id == clientId);
+            if(!client) {
+                Swal.fire('Error', 'Cliente no encontrado', 'error');
+                return;
+            }
+            
             const income = parseFloat(document.getElementById('monthly-income').value) || 0;
             
             if(income <= 0) {
@@ -975,9 +1053,10 @@
                 ssTax: taxes.ssEmpl,
                 cess: taxes.cess,
                 total: taxes.total,
-                hasEmployees: state.config.hasEmployees
+                hasEmployees: state.config ? state.config.hasEmployees : false
             };
             
+            if(!state.taxPayments) state.taxPayments = [];
             state.taxPayments.push(taxRecord);
             
             Swal.fire({
@@ -1008,10 +1087,18 @@
             [taxSelect, djSelect, reportSelect, taxFilterSelect].forEach(select => {
                 if(select) {
                     const currentValue = select.value;
-                    select.innerHTML = select.id === 'tax-filter-client' ? '<option value="all">Todos los clientes</option>' : '';
+                    select.innerHTML = '';
+                    
+                    if(select.id === 'tax-filter-client') {
+                        select.innerHTML = '<option value="all">Todos los clientes</option>';
+                    }
                     
                     if(select.id === 'dj-client' || select.id === 'report-client') {
                         select.innerHTML = '<option value="all">Todos los clientes</option>';
+                    }
+                    
+                    if(select.id === 'tax-client') {
+                        select.innerHTML = '<option value="">Seleccionar cliente...</option>';
                     }
                     
                     state.clients.forEach(c => {
@@ -1021,6 +1108,7 @@
                         select.appendChild(option);
                     });
                     
+                    // Restaurar valor si existe
                     if(currentValue && Array.from(select.options).some(opt => opt.value == currentValue)) {
                         select.value = currentValue;
                     }
@@ -1043,6 +1131,7 @@
             });
             
             if(name) {
+                if(!state.clients) state.clients = [];
                 state.clients.push({ 
                     id: Date.now(), 
                     name, 
@@ -1074,11 +1163,13 @@
                 client.name = name;
                 
                 // Actualizar nombre en pagos de impuestos
-                state.taxPayments.forEach(t => {
-                    if(t.clientId === id) {
-                        t.clientName = name;
-                    }
-                });
+                if(state.taxPayments) {
+                    state.taxPayments.forEach(t => {
+                        if(t.clientId === id) {
+                            t.clientName = name;
+                        }
+                    });
+                }
                 
                 renderClients();
                 updateClientSelects();
@@ -1099,7 +1190,7 @@
             
             if(result.isConfirmed) {
                 state.clients = state.clients.filter(c => c.id !== id);
-                state.taxPayments = state.taxPayments.filter(t => t.clientId !== id);
+                state.taxPayments = (state.taxPayments || []).filter(t => t.clientId !== id);
                 
                 if(state.selectedClientId === id) {
                     state.selectedClientId = null;
@@ -1116,7 +1207,14 @@
 
         function renderClients() {
             const container = document.getElementById('client-tags');
+            if(!container) return;
+            
             container.innerHTML = '';
+            
+            if(!state.clients || state.clients.length === 0) {
+                container.innerHTML = '<p class="text-slate-400 text-sm">No hay clientes creados</p>';
+                return;
+            }
             
             state.clients.forEach(c => {
                 const isActive = state.selectedClientId === c.id;
@@ -1155,6 +1253,8 @@
 
         function addMovement() {
             const client = state.clients.find(c => c.id === state.selectedClientId);
+            if(!client) return;
+            
             const type = document.getElementById('move-type').value;
             const concept = document.getElementById('move-concept').value;
             const amount = parseFloat(document.getElementById('move-amount').value);
@@ -1165,6 +1265,8 @@
                 return;
             }
 
+            if(!client.movements) client.movements = [];
+            
             client.movements.unshift({
                 id: Date.now(),
                 date: date,
@@ -1195,10 +1297,12 @@
             
             if(result.isConfirmed) {
                 const client = state.clients.find(c => c.id === clientId);
-                client.movements = client.movements.filter(m => m.id !== movementId);
-                renderMovements();
-                updateClientSummary();
-                save(true);
+                if(client && client.movements) {
+                    client.movements = client.movements.filter(m => m.id !== movementId);
+                    renderMovements();
+                    updateClientSummary();
+                    save(true);
+                }
             }
         }
 
@@ -1208,6 +1312,11 @@
             
             const body = document.getElementById('movements-table-body');
             body.innerHTML = '';
+            
+            if(!client.movements || client.movements.length === 0) {
+                body.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-slate-400">No hay movimientos</td></tr>';
+                return;
+            }
             
             client.movements.sort((a, b) => new Date(b.date) - new Date(a.date));
             
@@ -1245,23 +1354,25 @@
             let income = 0;
             let expense = 0;
             
-            client.movements.forEach(m => {
-                if(m.type === 'income') income += m.amount;
-                else expense += m.amount;
-            });
+            if(client.movements) {
+                client.movements.forEach(m => {
+                    if(m.type === 'income') income += m.amount;
+                    else expense += m.amount;
+                });
+            }
             
             document.getElementById('client-income-total').innerText = income.toFixed(2);
             document.getElementById('client-expense-total').innerText = expense.toFixed(2);
             document.getElementById('client-balance').innerText = (income - expense).toFixed(2);
         }
 
-        // --- FUNCIONES PARA IMPUESTOS (NUEVA SECCIÓN) ---
+        // --- FUNCIONES PARA IMPUESTOS ---
         function renderTaxTable() {
             const filterClient = document.getElementById('tax-filter-client').value;
             const filterMonth = document.getElementById('tax-filter-month').value;
             const filterYear = document.getElementById('tax-filter-year').value;
             
-            let filteredPayments = [...state.taxPayments];
+            let filteredPayments = state.taxPayments ? [...state.taxPayments] : [];
             
             // Aplicar filtros
             if(filterClient !== 'all') {
@@ -1282,33 +1393,37 @@
             
             let totalSales = 0, totalPersonal = 0, totalWork = 0, totalSS = 0, totalCess = 0, totalAll = 0;
             
-            filteredPayments.forEach(t => {
-                totalSales += t.salesTax || 0;
-                totalPersonal += t.personalTax || 0;
-                totalWork += t.workTax || 0;
-                totalSS += t.ssTax || 0;
-                totalCess += t.cess || 0;
-                totalAll += t.total || 0;
-                
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td class="py-2">${t.date}</td>
-                    <td class="py-2 font-medium">${t.clientName}</td>
-                    <td class="py-2">Impuesto mensual</td>
-                    <td class="py-2 text-right">${(t.salesTax || 0).toFixed(2)}</td>
-                    <td class="py-2 text-right">${(t.personalTax || 0).toFixed(2)}</td>
-                    <td class="py-2 text-right">${(t.workTax || 0).toFixed(2)}</td>
-                    <td class="py-2 text-right">${(t.ssTax || 0).toFixed(2)}</td>
-                    <td class="py-2 text-right">${(t.cess || 0).toFixed(2)}</td>
-                    <td class="py-2 text-right font-bold text-blue-600">${(t.total || 0).toFixed(2)}</td>
-                    <td class="py-2 text-center">
-                        <button onclick="deleteTaxPayment(${t.id})" class="text-red-400 hover:text-red-600">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i>
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
+            if(filteredPayments.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-slate-400">No hay pagos de impuestos registrados</td></tr>';
+            } else {
+                filteredPayments.forEach(t => {
+                    totalSales += t.salesTax || 0;
+                    totalPersonal += t.personalTax || 0;
+                    totalWork += t.workTax || 0;
+                    totalSS += t.ssTax || 0;
+                    totalCess += t.cess || 0;
+                    totalAll += t.total || 0;
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="py-2">${t.date}</td>
+                        <td class="py-2 font-medium">${t.clientName}</td>
+                        <td class="py-2">Impuesto mensual</td>
+                        <td class="py-2 text-right">${(t.salesTax || 0).toFixed(2)}</td>
+                        <td class="py-2 text-right">${(t.personalTax || 0).toFixed(2)}</td>
+                        <td class="py-2 text-right">${(t.workTax || 0).toFixed(2)}</td>
+                        <td class="py-2 text-right">${(t.ssTax || 0).toFixed(2)}</td>
+                        <td class="py-2 text-right">${(t.cess || 0).toFixed(2)}</td>
+                        <td class="py-2 text-right font-bold text-blue-600">${(t.total || 0).toFixed(2)}</td>
+                        <td class="py-2 text-center">
+                            <button onclick="deleteTaxPayment(${t.id})" class="text-red-400 hover:text-red-600">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
             
             // Actualizar resumen
             document.getElementById('tax-total-sales').innerText = totalSales.toFixed(2);
@@ -1352,13 +1467,20 @@
             });
             
             if(result.isConfirmed) {
-                state.taxPayments = state.taxPayments.filter(t => t.id !== id);
-                renderTaxTable();
-                save(true);
+                if(state.taxPayments) {
+                    state.taxPayments = state.taxPayments.filter(t => t.id !== id);
+                    renderTaxTable();
+                    save(true);
+                }
             }
         }
         
         function exportTaxesCSV() {
+            if(!state.taxPayments || state.taxPayments.length === 0) {
+                Swal.fire('Info', 'No hay datos para exportar', 'info');
+                return;
+            }
+            
             let csv = 'Fecha,Cliente,Ingresos,Ventas (10%),Personal (5%),F.Trabajo (5%),SS Empl (14%),CESS,Total\n';
             
             state.taxPayments.forEach(t => {
@@ -1373,7 +1495,7 @@
             a.click();
         }
 
-        // --- DJ ---
+        // --- DJ ACTUALIZADA ---
         function calculateDJ() {
             const clientId = document.getElementById('dj-client').value;
             const year = parseInt(document.getElementById('dj-year').value);
@@ -1381,17 +1503,21 @@
             let totalI = 0;
             let totalE = 0;
             
+            if(!state.clients) state.clients = [];
+            
             state.clients.forEach(c => {
                 // Si hay un cliente específico seleccionado, solo procesar ese
                 if(clientId !== 'all' && c.id != clientId) return;
                 
-                c.movements.forEach(m => {
-                    const mYear = new Date(m.date).getFullYear();
-                    if(mYear === year) {
-                        if(m.type === 'income') totalI += m.amount;
-                        else totalE += m.amount;
-                    }
-                });
+                if(c.movements) {
+                    c.movements.forEach(m => {
+                        const mYear = new Date(m.date).getFullYear();
+                        if(mYear === year) {
+                            if(m.type === 'income') totalI += m.amount;
+                            else totalE += m.amount;
+                        }
+                    });
+                }
             });
 
             const net = totalI - totalE;
@@ -1447,8 +1573,8 @@
             document.getElementById('report-client-name').innerText = client.name;
             
             // Filtrar movimientos según período
-            let movements = [...client.movements];
-            let taxPayments = state.taxPayments.filter(t => t.clientId == clientId);
+            let movements = client.movements ? [...client.movements] : [];
+            let taxPayments = state.taxPayments ? state.taxPayments.filter(t => t.clientId == clientId) : [];
             
             if(period !== 'all') {
                 const now = new Date();
@@ -1481,7 +1607,7 @@
             });
             
             const balance = income - expense;
-            const totalTaxes = taxPayments.reduce((sum, t) => sum + t.total, 0);
+            const totalTaxes = taxPayments.reduce((sum, t) => sum + (t.total || 0), 0);
             
             // Actualizar tarjetas
             document.getElementById('report-income').innerText = income.toFixed(2);
@@ -1502,38 +1628,48 @@
             // Renderizar tabla de movimientos
             const movementsBody = document.getElementById('report-movements-body');
             movementsBody.innerHTML = '';
-            movements.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(m => {
-                movementsBody.innerHTML += `
-                    <tr>
-                        <td class="py-2">${m.date}</td>
-                        <td class="py-2">${m.concept}</td>
-                        <td class="py-2">
-                            <span class="badge ${m.type === 'income' ? 'badge-success' : 'badge-warning'}">
-                                ${m.type === 'income' ? 'Ingreso' : 'Gasto'}
-                            </span>
-                        </td>
-                        <td class="py-2 text-right font-bold ${m.type === 'income' ? 'text-green-600' : 'text-red-600'}">
-                            ${m.type === 'income' ? '+' : '-'}${m.amount.toFixed(2)}
-                        </td>
-                    </tr>
-                `;
-            });
+            
+            if(movements.length === 0) {
+                movementsBody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-slate-400">No hay movimientos</td></tr>';
+            } else {
+                movements.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(m => {
+                    movementsBody.innerHTML += `
+                        <tr>
+                            <td class="py-2">${m.date}</td>
+                            <td class="py-2">${m.concept}</td>
+                            <td class="py-2">
+                                <span class="badge ${m.type === 'income' ? 'badge-success' : 'badge-warning'}">
+                                    ${m.type === 'income' ? 'Ingreso' : 'Gasto'}
+                                </span>
+                            </td>
+                            <td class="py-2 text-right font-bold ${m.type === 'income' ? 'text-green-600' : 'text-red-600'}">
+                                ${m.type === 'income' ? '+' : '-'}${m.amount.toFixed(2)}
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
             
             // Renderizar tabla de impuestos
             const taxesBody = document.getElementById('report-taxes-body');
             taxesBody.innerHTML = '';
-            taxPayments.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(t => {
-                taxesBody.innerHTML += `
-                    <tr>
-                        <td class="py-2">${t.date}</td>
-                        <td class="py-2">Impuesto mensual</td>
-                        <td class="py-2 text-right">${(t.salesTax || 0).toFixed(2)}</td>
-                        <td class="py-2 text-right">${(t.personalTax || 0).toFixed(2)}</td>
-                        <td class="py-2 text-right">${(t.cess || 0).toFixed(2)}</td>
-                        <td class="py-2 text-right font-bold text-blue-600">${(t.total || 0).toFixed(2)}</td>
-                    </tr>
-                `;
-            });
+            
+            if(taxPayments.length === 0) {
+                taxesBody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-slate-400">No hay pagos de impuestos</td></tr>';
+            } else {
+                taxPayments.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(t => {
+                    taxesBody.innerHTML += `
+                        <tr>
+                            <td class="py-2">${t.date}</td>
+                            <td class="py-2">Impuesto mensual</td>
+                            <td class="py-2 text-right">${(t.salesTax || 0).toFixed(2)}</td>
+                            <td class="py-2 text-right">${(t.personalTax || 0).toFixed(2)}</td>
+                            <td class="py-2 text-right">${(t.cess || 0).toFixed(2)}</td>
+                            <td class="py-2 text-right font-bold text-blue-600">${(t.total || 0).toFixed(2)}</td>
+                        </tr>
+                    `;
+                });
+            }
             
             // Crear gráficos
             createCharts(income, expense, taxPayments);
@@ -1545,29 +1681,31 @@
             if(taxBreakdownChart) taxBreakdownChart.destroy();
             
             // Gráfico de ingresos vs gastos
-            const ctx1 = document.getElementById('incomeExpenseChart').getContext('2d');
-            incomeExpenseChart = new Chart(ctx1, {
-                type: 'bar',
-                data: {
-                    labels: ['Ingresos', 'Gastos', 'Balance'],
-                    datasets: [{
-                        label: 'Monto (CUP)',
-                        data: [income, expense, income - expense],
-                        backgroundColor: ['#22c55e', '#ef4444', '#3b82f6'],
-                        borderColor: ['#16a34a', '#dc2626', '#2563eb'],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
+            const ctx1 = document.getElementById('incomeExpenseChart')?.getContext('2d');
+            if(ctx1) {
+                incomeExpenseChart = new Chart(ctx1, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Ingresos', 'Gastos', 'Balance'],
+                        datasets: [{
+                            label: 'Monto (CUP)',
+                            data: [income, expense, income - expense],
+                            backgroundColor: ['#22c55e', '#ef4444', '#3b82f6'],
+                            borderColor: ['#16a34a', '#dc2626', '#2563eb'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
             
             // Gráfico de desglose de impuestos
             const taxBreakdown = {
@@ -1578,27 +1716,29 @@
                 cess: taxPayments.reduce((sum, t) => sum + (t.cess || 0), 0)
             };
             
-            const ctx2 = document.getElementById('taxBreakdownChart').getContext('2d');
-            taxBreakdownChart = new Chart(ctx2, {
-                type: 'pie',
-                data: {
-                    labels: ['Ventas (10%)', 'Personal (5%)', 'F. Trabajo (5%)', 'SS Empl (14%)', 'CESS'],
-                    datasets: [{
-                        data: [taxBreakdown.sales, taxBreakdown.personal, taxBreakdown.work, taxBreakdown.ss, taxBreakdown.cess],
-                        backgroundColor: ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
+            const ctx2 = document.getElementById('taxBreakdownChart')?.getContext('2d');
+            if(ctx2) {
+                taxBreakdownChart = new Chart(ctx2, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Ventas (10%)', 'Personal (5%)', 'F. Trabajo (5%)', 'SS Empl (14%)', 'CESS'],
+                        datasets: [{
+                            data: [taxBreakdown.sales, taxBreakdown.personal, taxBreakdown.work, taxBreakdown.ss, taxBreakdown.cess],
+                            backgroundColor: ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
         }
 
         // --- IMPORT/EXPORT ---
@@ -1638,13 +1778,17 @@
                 });
                 
                 if(result.isConfirmed) {
-                    state = importedState;
-                    // Asegurar que exista taxPayments
-                    if(!state.taxPayments) state.taxPayments = [];
+                    state = {
+                        clients: importedState.clients || [],
+                        taxPayments: importedState.taxPayments || [],
+                        selectedClientId: importedState.selectedClientId || null,
+                        config: importedState.config || { hasEmployees: false, darkMode: false }
+                    };
                     save();
                     location.reload();
                 }
             } catch(error) {
+                console.error('Import error:', error);
                 Swal.fire('Error', 'El archivo no es válido', 'error');
             }
             
