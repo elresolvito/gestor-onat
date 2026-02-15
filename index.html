@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora Fiscal TCP - Cuba</title>
+    <title>Gestor Fiscal TCP - Cuba</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.js"></script>
     <style>
@@ -11,383 +11,372 @@
         
         body {
             font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+        }
+
+        .section-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .btn-tab {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            color: #64748b;
+        }
+
+        .btn-tab.active {
+            background-color: #2563eb;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.4);
+            transform: scale(1.05);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 10px;
             background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
         }
 
-        .glass-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(226, 232, 240, 0.8);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-
-        .btn-primary {
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .btn-primary:active {
-            transform: scale(0.95);
-        }
-
-        .tab-active {
-            border-bottom: 3px solid #10b981;
-            color: #10b981;
-        }
-
-        input:focus {
+        .input-field:focus {
             outline: none;
-            border-color: #10b981;
-            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+            border-color: #2563eb;
+            ring: 2px rgba(37, 99, 235, 0.1);
         }
 
-        /* Estilo para las tablas responsivas */
-        .table-container {
-            overflow-x: auto;
+        .toggle-switch {
+            width: 48px;
+            height: 24px;
+            border-radius: 99px;
+            position: relative;
+            transition: background-color 0.3s;
+            cursor: pointer;
+        }
+
+        .toggle-dot {
+            width: 18px;
+            height: 18px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            transition: transform 0.3s;
+        }
+
+        input:checked + .toggle-switch {
+            background-color: #22c55e;
+        }
+
+        input:checked + .toggle-switch .toggle-dot {
+            transform: translateX(24px);
         }
     </style>
 </head>
-<body class="p-2 md:p-6">
-    <div id="app" class="max-w-5xl mx-auto">
-        <!-- Header -->
-        <header class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-                <h1 class="text-3xl font-bold text-slate-800 flex items-center gap-2">
-                    <i data-lucide="calculator" class="text-emerald-500"></i>
-                    Gestor Fiscal TCP
-                </h1>
-                <p class="text-slate-500">Control de impuestos y registros contables (Cuba)</p>
-            </div>
+<body class="p-4 md:p-8">
+    <div id="app" class="max-w-4xl mx-auto">
+        
+        <!-- Header Principal similar a la imagen -->
+        <header class="flex justify-between items-center mb-8">
+            <h1 class="text-2xl font-bold text-slate-800">Contabilidad TCP</h1>
             <div class="flex gap-2">
-                <button onclick="exportData()" class="btn-primary bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 hover:bg-slate-50">
-                    <i data-lucide="download" class="w-4 h-4 text-emerald-600"></i> Exportar (Nube/Drive)
+                <button onclick="exportData()" title="Guardar en Drive / Respaldo" class="p-2 bg-white border rounded-lg hover:bg-slate-50">
+                    <i data-lucide="cloud-off" class="w-5 h-5 text-slate-400"></i>
                 </button>
-                <label class="btn-primary bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 hover:bg-emerald-700 cursor-pointer">
-                    <i data-lucide="upload" class="w-4 h-4"></i> Importar
-                    <input type="file" id="importFile" class="hidden" onchange="importData(event)">
+                <label class="p-2 bg-white border rounded-lg hover:bg-slate-50 cursor-pointer">
+                    <i data-lucide="upload-cloud" class="w-5 h-5 text-slate-400"></i>
+                    <input type="file" class="hidden" onchange="importData(event)">
                 </label>
             </div>
         </header>
 
-        <!-- Navigation Tabs -->
-        <nav class="flex border-b border-slate-200 mb-6 overflow-x-auto whitespace-nowrap">
-            <button onclick="switchTab('calc')" id="tab-calc" class="px-6 py-3 font-semibold text-slate-600 tab-active">Impuestos Mensuales</button>
-            <button onclick="switchTab('records')" id="tab-records" class="px-6 py-3 font-semibold text-slate-600">Registros por Cliente</button>
-            <button onclick="switchTab('dj')" id="tab-dj" class="px-6 py-3 font-semibold text-slate-600">Declaración Jurada</button>
+        <!-- Navegación por Iconos (Vistas) -->
+        <nav class="grid grid-cols-3 gap-4 mb-8">
+            <button onclick="switchTab('calc')" id="tab-calc" class="btn-tab active">
+                <i data-lucide="calculator" class="mb-1"></i>
+                <span class="text-xs font-bold">Calculadora</span>
+            </button>
+            <button onclick="switchTab('records')" id="tab-records" class="btn-tab bg-white">
+                <i data-lucide="users" class="mb-1"></i>
+                <span class="text-xs font-bold">Clientes</span>
+            </button>
+            <button onclick="switchTab('dj')" id="tab-dj" class="btn-tab bg-white">
+                <i data-lucide="file-text" class="mb-1"></i>
+                <span class="text-xs font-bold">DJ Anual</span>
+            </button>
         </nav>
 
-        <!-- Main Content -->
-        <main>
-            <!-- SECCIÓN CALCULADORA -->
-            <section id="section-calc" class="space-y-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Configuración General -->
-                    <div class="glass-card p-6 rounded-2xl">
-                        <h2 class="text-xl font-bold mb-4 text-slate-700">Datos del Mes</h2>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-slate-600 mb-1">Ingresos Brutos del Mes (CUP)</label>
-                                <input type="number" id="monthly-income" oninput="calculateTaxes()" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl" placeholder="0.00">
-                            </div>
-                            
-                            <div class="pt-4 border-t">
-                                <label class="flex items-center gap-2 mb-3">
-                                    <input type="checkbox" id="has-employees" onchange="toggleEmployees()" class="w-5 h-5 accent-emerald-500">
-                                    <span class="text-slate-700 font-medium">Tengo Empleados Contratados</span>
-                                </label>
-                                <div id="employee-config" class="hidden space-y-3 pl-7">
-                                    <div>
-                                        <label class="block text-xs font-medium text-slate-500">Cantidad de empleados</label>
-                                        <input type="number" id="emp-count" oninput="calculateTaxes()" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg" value="0">
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-medium text-slate-500">Suma total de salarios pagados</label>
-                                        <input type="number" id="emp-salaries" oninput="calculateTaxes()" class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg" placeholder="0.00">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="pt-4 border-t">
-                                <label class="block text-sm font-medium text-slate-600 mb-1">Escala Contribución Seg. Social</label>
-                                <select id="cess-scale" onchange="calculateTaxes()" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                                    <option value="300">Escala Mínima (2000 CUP ingreso base)</option>
-                                    <option value="450">Escala 3000</option>
-                                    <option value="750">Escala 5000</option>
-                                    <option value="1500">Escala 10000</option>
-                                </select>
-                                <p class="text-[10px] text-slate-400 mt-1">El cálculo corresponde al 14% de la base seleccionada.</p>
-                            </div>
+        <!-- SECCIÓN: CONFIGURACIÓN DE ACTIVIDAD -->
+        <section id="section-calc">
+            <div class="section-card">
+                <h2 class="text-lg font-bold text-slate-700 mb-4">Configuración de Actividad</h2>
+                
+                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl mb-4">
+                    <span class="text-sm font-medium text-slate-600">¿Tiene empleados contratados?</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="has-employees" class="sr-only" onchange="toggleEmployees()">
+                        <div class="toggle-switch bg-slate-300">
+                            <div class="toggle-dot"></div>
                         </div>
+                    </label>
+                </div>
+
+                <div id="employee-inputs" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 animate-in fade-in duration-300">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Cant. Empleados</label>
+                        <input type="number" id="emp-count" oninput="calculateTaxes()" class="input-field" value="1">
                     </div>
-
-                    <!-- Resultados -->
-                    <div class="glass-card p-6 rounded-2xl bg-slate-900 text-white border-none">
-                        <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
-                            <i data-lucide="receipt"></i> Resumen a Pagar
-                        </h2>
-                        <div class="space-y-4">
-                            <div class="flex justify-between items-center text-slate-300">
-                                <span>Ingresos Personales (5%):</span>
-                                <span id="res-personal" class="font-mono text-lg font-bold">0.00</span>
-                            </div>
-                            <div class="flex justify-between items-center text-slate-300">
-                                <span>Ventas y Servicios (10%):</span>
-                                <span id="res-sales" class="font-mono text-lg font-bold">0.00</span>
-                            </div>
-                            <div class="flex justify-between items-center text-slate-300">
-                                <span>Fuerza de Trabajo (14%):</span>
-                                <span id="res-work" class="font-mono text-lg font-bold">0.00</span>
-                            </div>
-                            <div class="flex justify-between items-center text-slate-300">
-                                <span>Seguridad Social (CESS):</span>
-                                <span id="res-cess" class="font-mono text-lg font-bold">0.00</span>
-                            </div>
-                            <div class="pt-4 border-t border-slate-700 flex justify-between items-center">
-                                <span class="text-xl font-bold">TOTAL A PAGAR:</span>
-                                <span id="res-total" class="text-2xl font-bold text-emerald-400 font-mono">0.00</span>
-                            </div>
-                        </div>
-                        <button onclick="saveMonthlyRecord()" class="w-full mt-8 bg-emerald-600 hover:bg-emerald-500 py-3 rounded-xl font-bold transition-all">
-                            Guardar en Historial
-                        </button>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Total Salarios (CUP)</label>
+                        <input type="number" id="emp-salaries" oninput="calculateTaxes()" class="input-field" placeholder="0.00">
                     </div>
                 </div>
-            </section>
 
-            <!-- SECCIÓN REGISTROS POR CLIENTE -->
-            <section id="section-records" class="hidden space-y-6">
-                <div class="glass-card p-6 rounded-2xl">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-xl font-bold text-slate-800">Clientes y Movimientos</h2>
-                        <button onclick="openClientModal()" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-emerald-700 flex items-center gap-2">
-                            <i data-lucide="plus" class="w-4 h-4"></i> Nuevo Cliente
-                        </button>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Ingresos Brutos (Mes)</label>
+                        <input type="number" id="monthly-income" oninput="calculateTaxes()" class="input-field" placeholder="0.00">
                     </div>
-                    
-                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                        <!-- Lista de Clientes -->
-                        <div class="lg:col-span-1 space-y-2" id="client-list">
-                            <!-- Clientes se cargan aquí -->
-                        </div>
-
-                        <!-- Detalles del Cliente Seleccionado -->
-                        <div class="lg:col-span-3 border-l pl-0 md:pl-6">
-                            <div id="no-client-selected" class="flex flex-col items-center justify-center h-64 text-slate-400">
-                                <i data-lucide="users" class="w-12 h-12 mb-2 opacity-20"></i>
-                                <p>Selecciona un cliente para ver sus ingresos y gastos</p>
-                            </div>
-
-                            <div id="client-details" class="hidden">
-                                <div class="flex justify-between items-end mb-6">
-                                    <div>
-                                        <h3 id="current-client-name" class="text-2xl font-bold text-slate-800">Nombre del Cliente</h3>
-                                        <p id="current-client-info" class="text-sm text-slate-500">Detalles adicionales</p>
-                                    </div>
-                                    <button onclick="openMovementModal()" class="text-emerald-600 border border-emerald-600 px-4 py-2 rounded-xl text-sm font-bold hover:bg-emerald-50 transition-all">
-                                        + Agregar Operación
-                                    </button>
-                                </div>
-
-                                <div class="table-container">
-                                    <table class="w-full text-left">
-                                        <thead class="bg-slate-50 text-slate-500 text-xs uppercase font-bold">
-                                            <tr>
-                                                <th class="p-3 rounded-l-lg">Fecha</th>
-                                                <th class="p-3">Concepto</th>
-                                                <th class="p-3">Tipo</th>
-                                                <th class="p-3 text-right rounded-r-lg">Monto (CUP)</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="movements-body" class="text-sm divide-y">
-                                            <!-- Movimientos se cargan aquí -->
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Seguridad Social (CESS)</label>
+                        <select id="cess-scale" onchange="calculateTaxes()" class="input-field">
+                            <option value="300">Escala 2000 (Cuota 300)</option>
+                            <option value="450">Escala 3000 (Cuota 450)</option>
+                            <option value="750">Escala 5000 (Cuota 750)</option>
+                            <option value="1500">Escala 10000 (Cuota 1500)</option>
+                        </select>
                     </div>
-                </div>
-            </section>
-
-            <!-- SECCIÓN DECLARACIÓN JURADA -->
-            <section id="section-dj" class="hidden space-y-6">
-                <div class="glass-card p-6 rounded-2xl">
-                    <h2 class="text-xl font-bold mb-6 text-slate-800 flex items-center gap-2">
-                        <i data-lucide="file-text"></i> Resumen para la DJ Anual
-                    </h2>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                        <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
-                            <p class="text-xs font-bold text-emerald-600 uppercase mb-1">Total Ingresos</p>
-                            <p id="dj-total-income" class="text-2xl font-bold text-emerald-800">0.00</p>
-                        </div>
-                        <div class="bg-red-50 p-4 rounded-xl border border-red-100">
-                            <p class="text-xs font-bold text-red-600 uppercase mb-1">Total Gastos</p>
-                            <p id="dj-total-expense" class="text-2xl font-bold text-red-800">0.00</p>
-                        </div>
-                        <div class="bg-slate-800 p-4 rounded-xl text-white">
-                            <p class="text-xs font-bold text-slate-400 uppercase mb-1">Rendimiento (Utilidad)</p>
-                            <p id="dj-utility" class="text-2xl font-bold">0.00</p>
-                        </div>
-                    </div>
-
-                    <div class="space-y-4">
-                        <h3 class="font-bold text-slate-700">Cálculo Proyectado</h3>
-                        <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                            <div class="flex justify-between items-center py-2 border-b">
-                                <span>Mínimo Exento (Inmune al impuesto)</span>
-                                <span class="font-mono">39,120.00 CUP</span>
-                            </div>
-                            <div class="flex justify-between items-center py-2 border-b">
-                                <span>Impuesto determinado (Escala Progresiva)</span>
-                                <span id="dj-tax-calc" class="font-mono font-bold">0.00</span>
-                            </div>
-                            <div class="flex justify-between items-center py-4 text-emerald-700 font-bold">
-                                <span>SALDO A PAGAR / DEVOLVER</span>
-                                <span id="dj-final-balance" class="text-xl">0.00</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </main>
-
-        <!-- Modales -->
-        <div id="modal-container" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50">
-            <!-- Modal Cliente -->
-            <div id="modal-client" class="bg-white p-6 rounded-2xl w-full max-w-md hidden">
-                <h3 class="text-xl font-bold mb-4">Añadir Nuevo Cliente</h3>
-                <input type="text" id="new-client-name" class="w-full p-3 border rounded-xl mb-4" placeholder="Nombre completo">
-                <div class="flex gap-2">
-                    <button onclick="closeModal()" class="flex-1 py-2 text-slate-500 font-bold">Cancelar</button>
-                    <button onclick="addClient()" class="flex-1 py-2 bg-emerald-600 text-white rounded-xl font-bold">Guardar</button>
                 </div>
             </div>
 
-            <!-- Modal Movimiento -->
-            <div id="modal-move" class="bg-white p-6 rounded-2xl w-full max-w-md hidden">
-                <h3 class="text-xl font-bold mb-4">Nueva Operación</h3>
-                <div class="space-y-4">
-                    <select id="move-type" class="w-full p-3 border rounded-xl">
-                        <option value="income">Ingreso</option>
-                        <option value="expense">Gasto</option>
-                    </select>
-                    <input type="text" id="move-concept" class="w-full p-3 border rounded-xl" placeholder="Concepto">
-                    <input type="number" id="move-amount" class="w-full p-3 border rounded-xl" placeholder="Monto CUP">
-                    <input type="date" id="move-date" class="w-full p-3 border rounded-xl">
-                </div>
-                <div class="flex gap-2 mt-6">
-                    <button onclick="closeModal()" class="flex-1 py-2 text-slate-500 font-bold">Cancelar</button>
-                    <button onclick="addMovement()" class="flex-1 py-2 bg-emerald-600 text-white rounded-xl font-bold">Registrar</button>
+            <!-- Resumen de Impuestos a Pagar -->
+            <div class="section-card bg-white border-l-4 border-blue-600">
+                <h2 class="text-lg font-bold text-slate-700 mb-4">Resumen de Impuestos a Pagar</h2>
+                <div class="space-y-3">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-slate-500">Ventas/Servicios (10%):</span>
+                        <span id="res-sales" class="font-bold">0.00</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-slate-500">Ingresos Personales (5%):</span>
+                        <span id="res-personal" class="font-bold">0.00</span>
+                    </div>
+                    <div id="row-work" class="hidden flex justify-between text-sm">
+                        <span class="text-slate-500">Util. Fuerza Trabajo (5%):</span>
+                        <span id="res-work" class="font-bold">0.00</span>
+                    </div>
+                    <div id="row-ss" class="hidden flex justify-between text-sm">
+                        <span class="text-slate-500">Seguridad Social Empl. (14%):</span>
+                        <span id="res-ss-empl" class="font-bold">0.00</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-slate-500">Contribución CESS:</span>
+                        <span id="res-cess" class="font-bold">0.00</span>
+                    </div>
+                    <div class="pt-3 border-t flex justify-between items-center">
+                        <span class="font-bold text-slate-800">TOTAL A PAGAR:</span>
+                        <span id="res-total" class="text-xl font-black text-blue-600">0.00</span>
+                    </div>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <!-- Footer -->
-        <footer class="mt-12 pt-6 border-t border-slate-200 text-center text-slate-400 text-xs">
-            Desarrollado para Trabajadores por Cuenta Propia de Cuba. Funciona 100% Offline.
+        <!-- SECCIÓN: REGISTROS POR CLIENTE -->
+        <section id="section-records" class="hidden">
+            <div class="section-card">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-lg font-bold text-slate-700">Historial por Cliente</h2>
+                    <button onclick="promptNewClient()" class="text-blue-600 text-xs font-bold hover:underline">+ Nuevo Cliente</button>
+                </div>
+
+                <div class="flex gap-2 overflow-x-auto pb-4 mb-4" id="client-tags">
+                    <!-- Clientes como etiquetas -->
+                </div>
+
+                <div id="client-content" class="hidden">
+                    <div class="bg-slate-50 p-4 rounded-xl mb-6">
+                        <h3 class="text-xs font-bold text-slate-400 uppercase mb-3">Nuevo Movimiento</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                            <select id="move-type" class="input-field text-xs">
+                                <option value="income">Ingreso (+)</option>
+                                <option value="expense">Gasto (-)</option>
+                            </select>
+                            <input type="text" id="move-concept" class="input-field text-xs" placeholder="Concepto">
+                            <input type="number" id="move-amount" class="input-field text-xs" placeholder="Monto $">
+                            <button onclick="addMovement()" class="bg-blue-600 text-white text-xs font-bold py-2 rounded-lg">Registrar</button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="text-slate-400 border-b">
+                                <tr>
+                                    <th class="py-2">Fecha</th>
+                                    <th class="py-2">Concepto</th>
+                                    <th class="py-2 text-right">Monto</th>
+                                </tr>
+                            </thead>
+                            <tbody id="movements-table-body">
+                                <!-- Filas de movimientos -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div id="no-client-hint" class="text-center py-10 text-slate-400 text-sm">
+                    Selecciona o crea un cliente para ver sus registros.
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN: DJ ANUAL -->
+        <section id="section-dj" class="hidden">
+            <div class="section-card">
+                <h2 class="text-lg font-bold text-slate-700 mb-6">Declaración Jurada Anual</h2>
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="p-4 bg-green-50 rounded-xl border border-green-100 text-center">
+                        <p class="text-[10px] font-bold text-green-600 uppercase">Ingresos Totales</p>
+                        <p id="dj-incomes" class="text-lg font-bold">0.00</p>
+                    </div>
+                    <div class="p-4 bg-red-50 rounded-xl border border-red-100 text-center">
+                        <p class="text-[10px] font-bold text-red-600 uppercase">Gastos Totales</p>
+                        <p id="dj-expenses" class="text-lg font-bold">0.00</p>
+                    </div>
+                </div>
+                <div class="p-4 bg-slate-900 text-white rounded-xl mb-6 text-center">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase">Rendimiento Neto</p>
+                    <p id="dj-net" class="text-2xl font-black">0.00</p>
+                </div>
+                <div class="space-y-2 text-sm text-slate-600">
+                    <div class="flex justify-between">
+                        <span>Mínimo Exento:</span>
+                        <span>39,120.00</span>
+                    </div>
+                    <div class="flex justify-between font-bold text-slate-800 pt-2 border-t">
+                        <span>Impuesto DJ a Pagar:</span>
+                        <span id="dj-tax">0.00</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="text-center text-[10px] text-slate-400 mt-10">
+            &copy; 2024 Gestor Fiscal TCP. Funciona sin conexión.
         </footer>
     </div>
 
     <script>
-        // --- ESTADO DE LA APLICACIÓN ---
+        // --- CONSTANTES ---
+        const TAX_RATES = {
+            ventas: 0.10,
+            ingresos_personales: 0.05,
+            fuerza_trabajo: 0.05,
+            seguridad_social_empleador: 0.14
+        };
+
+        // --- ESTADO ---
         let state = {
             clients: [], // {id, name, movements: []}
-            monthlyRecords: [],
-            selectedClientId: null
+            selectedClientId: null,
+            config: {
+                hasEmployees: false
+            }
         };
 
-        // --- INICIALIZACIÓN ---
+        // --- INICIO ---
         window.onload = () => {
             lucide.createIcons();
-            loadState();
+            const saved = localStorage.getItem('tcp_data_v2');
+            if(saved) state = JSON.parse(saved);
             renderClients();
-            updateDJ();
-            // Poner fecha de hoy por defecto en el modal
-            document.getElementById('move-date').valueAsDate = new Date();
+            calculateTaxes();
         };
 
-        // --- NAVEGACIÓN ---
-        function switchTab(tab) {
-            document.querySelectorAll('nav button').forEach(b => b.classList.remove('tab-active'));
-            document.getElementById(`tab-${tab}`).classList.add('tab-active');
-            
-            document.querySelectorAll('main section').forEach(s => s.classList.add('hidden'));
-            document.getElementById(`section-${tab}`).classList.remove('hidden');
-            
-            if(tab === 'dj') updateDJ();
+        function save() {
+            localStorage.setItem('tcp_data_v2', JSON.stringify(state));
         }
 
-        // --- CALCULADORA DE IMPUESTOS ---
+        // --- NAVEGACIÓN ---
+        function switchTab(tabId) {
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active', 'bg-white'));
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            
+            document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(`section-${tabId}`).classList.remove('hidden');
+            
+            if(tabId === 'dj') calculateDJ();
+        }
+
+        // --- CALCULADORA ---
         function toggleEmployees() {
-            const container = document.getElementById('employee-config');
-            container.classList.toggle('hidden');
+            state.config.hasEmployees = document.getElementById('has-employees').checked;
+            document.getElementById('employee-inputs').classList.toggle('hidden', !state.config.hasEmployees);
+            document.getElementById('row-work').classList.toggle('hidden', !state.config.hasEmployees);
+            document.getElementById('row-ss').classList.toggle('hidden', !state.config.hasEmployees);
             calculateTaxes();
+            save();
         }
 
         function calculateTaxes() {
             const income = parseFloat(document.getElementById('monthly-income').value) || 0;
-            const hasEmployees = document.getElementById('has-employees').checked;
             const empSalaries = parseFloat(document.getElementById('emp-salaries').value) || 0;
             const cess = parseFloat(document.getElementById('cess-scale').value);
 
-            const taxPersonal = income * 0.05;
-            const taxSales = income * 0.10;
-            const taxWork = hasEmployees ? (empSalaries * 0.14) : 0;
+            const vta = income * TAX_RATES.ventas;
+            const personal = income * TAX_RATES.ingresos_personales;
+            const work = state.config.hasEmployees ? (empSalaries * TAX_RATES.fuerza_trabajo) : 0;
+            const ssEmpl = state.config.hasEmployees ? (empSalaries * TAX_RATES.seguridad_social_empleador) : 0;
 
-            document.getElementById('res-personal').innerText = taxPersonal.toLocaleString('es-CU', {minimumFractionDigits: 2});
-            document.getElementById('res-sales').innerText = taxSales.toLocaleString('es-CU', {minimumFractionDigits: 2});
-            document.getElementById('res-work').innerText = taxWork.toLocaleString('es-CU', {minimumFractionDigits: 2});
-            document.getElementById('res-cess').innerText = cess.toLocaleString('es-CU', {minimumFractionDigits: 2});
+            document.getElementById('res-sales').innerText = vta.toFixed(2);
+            document.getElementById('res-personal').innerText = personal.toFixed(2);
+            document.getElementById('res-work').innerText = work.toFixed(2);
+            document.getElementById('res-ss-empl').innerText = ssEmpl.toFixed(2);
+            document.getElementById('res-cess').innerText = cess.toFixed(2);
 
-            const total = taxPersonal + taxSales + taxWork + cess;
-            document.getElementById('res-total').innerText = total.toLocaleString('es-CU', {minimumFractionDigits: 2});
+            const total = vta + personal + work + ssEmpl + cess;
+            document.getElementById('res-total').innerText = total.toFixed(2);
         }
 
-        // --- GESTIÓN DE CLIENTES ---
-        function openClientModal() {
-            document.getElementById('modal-container').classList.remove('hidden');
-            document.getElementById('modal-container').classList.add('flex');
-            document.getElementById('modal-client').classList.remove('hidden');
+        // --- CLIENTES ---
+        function promptNewClient() {
+            const name = prompt("Nombre del nuevo cliente:");
+            if(name) {
+                state.clients.push({ id: Date.now(), name, movements: [] });
+                renderClients();
+                save();
+            }
         }
 
-        function openMovementModal() {
-            document.getElementById('modal-container').classList.remove('hidden');
-            document.getElementById('modal-container').classList.add('flex');
-            document.getElementById('modal-move').classList.remove('hidden');
-        }
-
-        function closeModal() {
-            document.getElementById('modal-container').classList.add('hidden');
-            document.getElementById('modal-client').classList.add('hidden');
-            document.getElementById('modal-move').classList.add('hidden');
-        }
-
-        function addClient() {
-            const name = document.getElementById('new-client-name').value;
-            if(!name) return;
-            
-            const newClient = {
-                id: Date.now(),
-                name: name,
-                movements: []
-            };
-            
-            state.clients.push(newClient);
-            saveState();
-            renderClients();
-            closeModal();
-            document.getElementById('new-client-name').value = '';
+        function renderClients() {
+            const container = document.getElementById('client-tags');
+            container.innerHTML = '';
+            state.clients.forEach(c => {
+                const isActive = state.selectedClientId === c.id;
+                container.innerHTML += `
+                    <button onclick="selectClient(${c.id})" class="px-4 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all ${isActive ? 'bg-blue-600 text-white' : 'bg-white text-slate-500 border'}">
+                        ${c.name}
+                    </button>
+                `;
+            });
         }
 
         function selectClient(id) {
             state.selectedClientId = id;
-            const client = state.clients.find(c => c.id === id);
-            
-            document.getElementById('no-client-selected').classList.add('hidden');
-            document.getElementById('client-details').classList.remove('hidden');
-            document.getElementById('current-client-name').innerText = client.name;
-            
+            document.getElementById('no-client-hint').classList.add('hidden');
+            document.getElementById('client-content').classList.remove('hidden');
+            renderClients();
             renderMovements();
-            renderClients(); // Para actualizar estilo activo
         }
 
         function addMovement() {
@@ -395,130 +384,78 @@
             const type = document.getElementById('move-type').value;
             const concept = document.getElementById('move-concept').value;
             const amount = parseFloat(document.getElementById('move-amount').value);
-            const date = document.getElementById('move-date').value;
 
-            if(!concept || !amount || !date) return;
+            if(!concept || isNaN(amount)) return;
 
-            client.movements.push({
+            client.movements.unshift({
                 id: Date.now(),
-                type, concept, amount, date
+                date: new Date().toLocaleDateString(),
+                type, concept, amount
             });
 
-            saveState();
-            renderMovements();
-            closeModal();
-            // Reset fields
             document.getElementById('move-concept').value = '';
             document.getElementById('move-amount').value = '';
-        }
-
-        function renderClients() {
-            const list = document.getElementById('client-list');
-            list.innerHTML = '';
-            state.clients.forEach(c => {
-                const isActive = state.selectedClientId === c.id;
-                list.innerHTML += `
-                    <button onclick="selectClient(${c.id})" class="w-full text-left p-4 rounded-xl transition-all ${isActive ? 'bg-emerald-50 text-emerald-700 font-bold border border-emerald-200' : 'bg-white hover:bg-slate-50 border border-slate-100'}">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs">
-                                ${c.name.charAt(0)}
-                            </div>
-                            <span>${c.name}</span>
-                        </div>
-                    </button>
-                `;
-            });
+            renderMovements();
+            save();
         }
 
         function renderMovements() {
             const client = state.clients.find(c => c.id === state.selectedClientId);
-            const body = document.getElementById('movements-body');
+            const body = document.getElementById('movements-table-body');
             body.innerHTML = '';
-            
-            client.movements.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(m => {
+            client.movements.forEach(m => {
                 body.innerHTML += `
-                    <tr class="hover:bg-slate-50 transition-colors">
-                        <td class="p-3 text-slate-500">${m.date}</td>
-                        <td class="p-3 font-medium">${m.concept}</td>
-                        <td class="p-3">
-                            <span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase ${m.type === 'income' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}">
-                                ${m.type === 'income' ? 'Ingreso' : 'Gasto'}
-                            </span>
-                        </td>
-                        <td class="p-3 text-right font-mono font-bold ${m.type === 'income' ? 'text-emerald-600' : 'text-red-600'}">
-                            ${m.type === 'income' ? '+' : '-'} ${m.amount.toLocaleString('es-CU', {minimumFractionDigits: 2})}
+                    <tr class="border-b border-slate-50">
+                        <td class="py-3 text-slate-400">${m.date}</td>
+                        <td class="py-3 font-medium">${m.concept}</td>
+                        <td class="py-3 text-right font-bold ${m.type === 'income' ? 'text-green-600' : 'text-red-600'}">
+                            ${m.type === 'income' ? '' : '-'}${m.amount.toFixed(2)}
                         </td>
                     </tr>
                 `;
             });
         }
 
-        // --- SECCIÓN DJ ---
-        function updateDJ() {
-            let totalIncome = 0;
-            let totalExpense = 0;
-
+        // --- DJ ---
+        function calculateDJ() {
+            let totalI = 0;
+            let totalE = 0;
             state.clients.forEach(c => {
                 c.movements.forEach(m => {
-                    if(m.type === 'income') totalIncome += m.amount;
-                    else totalExpense += m.amount;
+                    if(m.type === 'income') totalI += m.amount;
+                    else totalE += m.amount;
                 });
             });
 
-            const utility = totalIncome - totalExpense;
-            const baseImponible = Math.max(0, utility - 39120);
-            
-            // Simulación escala progresiva simple (Ej: 15% sobre base imponible)
-            const taxCalculated = baseImponible * 0.15; 
+            const net = totalI - totalE;
+            const tax = Math.max(0, (net - 39120) * 0.15); // Cálculo simplificado 15% tras exento
 
-            document.getElementById('dj-total-income').innerText = totalIncome.toLocaleString('es-CU', {minimumFractionDigits: 2});
-            document.getElementById('dj-total-expense').innerText = totalExpense.toLocaleString('es-CU', {minimumFractionDigits: 2});
-            document.getElementById('dj-utility').innerText = utility.toLocaleString('es-CU', {minimumFractionDigits: 2});
-            document.getElementById('dj-tax-calc').innerText = taxCalculated.toLocaleString('es-CU', {minimumFractionDigits: 2});
-            document.getElementById('dj-final-balance').innerText = taxCalculated.toLocaleString('es-CU', {minimumFractionDigits: 2}) + " CUP";
+            document.getElementById('dj-incomes').innerText = totalI.toFixed(2);
+            document.getElementById('dj-expenses').innerText = totalE.toFixed(2);
+            document.getElementById('dj-net').innerText = net.toFixed(2);
+            document.getElementById('dj-tax').innerText = tax.toFixed(2);
         }
 
-        // --- PERSISTENCIA Y NUBE ---
-        function saveState() {
-            localStorage.setItem('tcp_calc_data', JSON.stringify(state));
-        }
-
-        function loadState() {
-            const saved = localStorage.getItem('tcp_calc_data');
-            if(saved) state = JSON.parse(saved);
-        }
-
+        // --- IMPORT/EXPORT ---
         function exportData() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
-            const downloadAnchorNode = document.createElement('a');
-            downloadAnchorNode.setAttribute("href", dataStr);
-            downloadAnchorNode.setAttribute("download", "respaldo_tcp_contabilidad.json");
-            document.body.appendChild(downloadAnchorNode);
-            downloadAnchorNode.click();
-            downloadAnchorNode.remove();
+            const data = JSON.stringify(state);
+            const blob = new Blob([data], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'contabilidad_tcp_backup.json';
+            a.click();
         }
 
-        function importData(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+        function importData(e) {
+            const file = e.target.files[0];
             const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const importedState = JSON.parse(e.target.result);
-                    state = importedState;
-                    saveState();
-                    location.reload();
-                } catch (err) {
-                    alert("Error al importar: El archivo no es válido.");
-                }
+            reader.onload = (event) => {
+                state = JSON.parse(event.target.result);
+                save();
+                location.reload();
             };
             reader.readAsText(file);
-        }
-
-        function saveMonthlyRecord() {
-            // Lógica simple para simular guardado de historial
-            const total = document.getElementById('res-total').innerText;
-            alert(`Registro guardado exitosamente. Total: ${total} CUP. Puedes verlo en el resumen de DJ.`);
         }
     </script>
 </body>
