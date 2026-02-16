@@ -1,21 +1,31 @@
 {
     "name": "Gestor Fiscal TCP Pro",
     "short_name": "Gestor TCP",
-    "description": "Aplicación para gestión fiscal de TCP en Cuba",
+    "description": "Sistema profesional para gestión fiscal de Trabajadores por Cuenta Propia en Cuba",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#f1f5f9",
-    "theme_color": "#2563eb",
+    "background_color": "#667eea",
+    "theme_color": "#667eea",
     "orientation": "portrait",
+    "categories": ["finance", "business", "productivity"],
     "icons": [
         {
-            "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232563EB'/%3E%3Cpath d='M8 16L14 22L24 10' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3Ccircle cx='24' cy='8' r='2' fill='white'/%3E%3Ccircle cx='8' cy='24' r='2' fill='white'/%3E%3C/svg%3E",
+            "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23667eea'/%3E%3Cpath d='M8 16L14 22L24 10' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3Ccircle cx='24' cy='8' r='2' fill='white'/%3E%3Ccircle cx='8' cy='24' r='2' fill='white'/%3E%3C/svg%3E",
             "sizes": "192x192",
-            "type": "image/svg+xml"
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
         },
         {
-            "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232563EB'/%3E%3Cpath d='M8 16L14 22L24 10' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3Ccircle cx='24' cy='8' r='2' fill='white'/%3E%3Ccircle cx='8' cy='24' r='2' fill='white'/%3E%3C/svg%3E",
+            "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23667eea'/%3E%3Cpath d='M8 16L14 22L24 10' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3Ccircle cx='24' cy='8' r='2' fill='white'/%3E%3Ccircle cx='8' cy='24' r='2' fill='white'/%3E%3C/svg%3E",
             "sizes": "512x512",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1280' height='720' viewBox='0 0 1280 720'%3E%3Crect width='1280' height='720' fill='%23667eea'/%3E%3Ctext x='640' y='360' font-family='Arial' font-size='48' fill='white' text-anchor='middle'%3EGestor TCP Pro%3C/text%3E%3C/svg%3E",
+            "sizes": "1280x720",
             "type": "image/svg+xml"
         }
     ]
