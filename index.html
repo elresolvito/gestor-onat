@@ -7,32 +7,19 @@
     
     <!-- PWA Configuration -->
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0f2b4b">
+    <meta name="theme-color" content="#4f46e5">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Gestor TCP">
     
     <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
-    <!-- Tailwind CSS (producción) -->
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Tailwind CSS via CDN (CORREGIDO) -->
+    <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Lucide Icons con fallback -->
+    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script>
-        // Polyfill para Lucide (evita errores si no carga)
-        window.lucide = window.lucide || {
-            createIcons: function() { 
-                console.log('🔄 Lucide no disponible - usando modo seguro');
-                // Placeholder para iconos
-                document.querySelectorAll('[data-lucide]').forEach(el => {
-                    el.innerHTML = '●';
-                    el.style.fontSize = '1.2em';
-                });
-            }
-        };
-    </script>
     
     <!-- SweetAlert2 y Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -46,7 +33,7 @@
         }
 
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-family: 'Inter', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             transition: all 0.3s ease;
@@ -141,8 +128,8 @@
         .input-field {
             width: 100%;
             padding: 0.875rem 1rem;
-            background: rgba(255, 255, 255, 0.9);
-            border: 2px solid transparent;
+            background: white;
+            border: 2px solid #e2e8f0;
             border-radius: 16px;
             font-size: 0.95rem;
             transition: all 0.3s ease;
@@ -151,9 +138,9 @@
         }
 
         .dark .input-field {
-            background: rgba(26, 32, 44, 0.9);
+            background: #1e293b;
+            border-color: #334155;
             color: #e2e8f0;
-            border-color: transparent;
         }
 
         .input-field:focus {
@@ -206,17 +193,16 @@
 
         /* Modern Table */
         .table-container {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(10px);
+            background: white;
             border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            border: 1px solid #e2e8f0;
             overflow: hidden;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
 
         .dark .table-container {
-            background: rgba(26, 32, 44, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: #1e293b;
+            border: 1px solid #334155;
         }
 
         table {
@@ -226,30 +212,30 @@
         }
 
         th {
-            background: rgba(102, 126, 234, 0.1);
+            background: #f8fafc;
             font-weight: 600;
             font-size: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            color: #4a5568;
+            color: #64748b;
             padding: 1rem 0.75rem;
-            border-bottom: 2px solid rgba(102, 126, 234, 0.2);
+            border-bottom: 2px solid #e2e8f0;
         }
 
         .dark th {
-            background: rgba(102, 126, 234, 0.05);
-            color: #a0aec0;
-            border-bottom-color: rgba(255, 255, 255, 0.05);
+            background: #0f172a;
+            color: #94a3b8;
+            border-bottom-color: #334155;
         }
 
         td {
             padding: 0.875rem 0.75rem;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            border-bottom: 1px solid #e2e8f0;
             font-size: 0.875rem;
         }
 
         .dark td {
-            border-bottom-color: rgba(255, 255, 255, 0.05);
+            border-bottom-color: #334155;
         }
 
         /* Badges */
@@ -259,26 +245,21 @@
             border-radius: 9999px;
             font-size: 0.75rem;
             font-weight: 600;
-            letter-spacing: 0.025em;
-            text-transform: uppercase;
         }
 
         .badge-success {
-            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+            background: #22c55e;
             color: white;
-            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
         }
 
         .badge-warning {
-            background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+            background: #f59e0b;
             color: white;
-            box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
         }
 
         .badge-info {
-            background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+            background: #3b82f6;
             color: white;
-            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
         }
 
         /* Connection Status */
@@ -291,19 +272,17 @@
             font-size: 0.75rem;
             font-weight: 600;
             z-index: 1000;
-            backdrop-filter: blur(10px);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
             transition: all 0.3s ease;
         }
 
         .online {
-            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+            background: #10b981;
             color: white;
         }
 
         .offline {
-            background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+            background: #ef4444;
             color: white;
         }
 
@@ -321,15 +300,6 @@
 
         .fade-in {
             animation: slideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        /* Hover Effects */
-        .hover-lift {
-            transition: transform 0.3s ease;
-        }
-
-        .hover-lift:hover {
-            transform: translateY(-2px);
         }
 
         /* Scrollbar */
@@ -358,6 +328,22 @@
                 border-radius: 20px;
                 padding: 1.25rem;
             }
+            
+            .nav-tab span {
+                font-size: 0.65rem;
+            }
+        }
+
+        /* Utilidades adicionales de Tailwind */
+        .bg-gradient-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .text-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
     </style>
 </head>
@@ -369,7 +355,7 @@
         <!-- Header with Logo -->
         <header class="flex flex-wrap justify-between items-center mb-8 gap-4">
             <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg transform hover:rotate-6 transition-transform">
+                <div class="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg transform hover:rotate-6 transition-transform">
                     <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M8 16L14 22L24 10" stroke="white" stroke-width="3" stroke-linecap="round"/>
                         <circle cx="24" cy="8" r="2" fill="white"/>
@@ -384,29 +370,29 @@
             
             <div class="flex gap-2">
                 <!-- Save Indicator -->
-                <div id="save-indicator" class="flex items-center gap-2 px-4 py-2 glass-card text-sm font-medium">
+                <div id="save-indicator" class="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm rounded-xl text-sm font-medium shadow-lg">
                     <i data-lucide="check-circle" class="w-4 h-4 text-green-500"></i>
                     <span>Guardado</span>
                 </div>
                 
                 <!-- Theme Toggle -->
-                <button onclick="toggleDarkMode()" class="w-10 h-10 glass-card flex items-center justify-center hover:scale-110 transition-transform">
-                    <i data-lucide="moon" class="w-5 h-5"></i>
+                <button onclick="toggleDarkMode()" class="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-xl flex items-center justify-center hover:scale-110 transition-transform shadow-lg">
+                    <i data-lucide="moon" class="w-5 h-5 text-gray-700"></i>
                 </button>
                 
                 <!-- Export -->
-                <button onclick="exportData()" class="w-10 h-10 glass-card flex items-center justify-center hover:scale-110 transition-transform">
-                    <i data-lucide="download" class="w-5 h-5"></i>
+                <button onclick="exportData()" class="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-xl flex items-center justify-center hover:scale-110 transition-transform shadow-lg">
+                    <i data-lucide="download" class="w-5 h-5 text-gray-700"></i>
                 </button>
                 
                 <!-- Import -->
-                <label class="w-10 h-10 glass-card flex items-center justify-center hover:scale-110 transition-transform cursor-pointer">
-                    <i data-lucide="upload" class="w-5 h-5"></i>
+                <label class="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-xl flex items-center justify-center hover:scale-110 transition-transform cursor-pointer shadow-lg">
+                    <i data-lucide="upload" class="w-5 h-5 text-gray-700"></i>
                     <input type="file" class="hidden" onchange="importData(event)" accept=".json">
                 </label>
                 
                 <!-- Backup -->
-                <button onclick="createBackup()" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl font-bold text-sm hover:shadow-lg hover:scale-105 transition-all flex items-center gap-2">
+                <button onclick="createBackup()" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold text-sm hover:shadow-lg hover:scale-105 transition-all flex items-center gap-2 shadow-lg">
                     <i data-lucide="save" class="w-4 h-4"></i>
                     Respaldo
                 </button>
@@ -438,14 +424,14 @@
         </nav>
 
         <!-- SECTION 1: CALCULATOR -->
-        <section id="section-calc" class="fade-in">
+        <section id="section-calc">
             <div class="glass-card p-6 mb-6">
                 <h2 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                    <i data-lucide="settings" class="w-5 h-5 text-blue-500"></i>
+                    <i data-lucide="settings" class="w-5 h-5 text-indigo-500"></i>
                     Configuración de Actividad
                 </h2>
                 
-                <div class="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-2xl mb-6">
+                <div class="flex items-center justify-between p-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-2xl mb-6">
                     <span class="text-sm font-medium text-gray-700 dark:text-gray-300">¿Tiene empleados contratados?</span>
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" id="has-employees" class="sr-only" onchange="toggleEmployees()">
@@ -489,7 +475,7 @@
                 </div>
                 
                 <div class="mt-6 flex justify-end">
-                    <button onclick="registerTaxPayment()" class="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl font-bold hover:shadow-lg hover:scale-105 transition-all flex items-center gap-2">
+                    <button onclick="registerTaxPayment()" class="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl font-bold hover:shadow-lg hover:scale-105 transition-all flex items-center gap-2">
                         <i data-lucide="save" class="w-5 h-5"></i>
                         Registrar Pago de Impuestos
                     </button>
@@ -497,13 +483,13 @@
             </div>
 
             <!-- Tax Summary -->
-            <div class="glass-card p-6 border-l-4 border-blue-500">
+            <div class="glass-card p-6 border-l-4 border-indigo-500">
                 <h2 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-                    <i data-lucide="receipt" class="w-5 h-5 text-blue-500"></i>
+                    <i data-lucide="receipt" class="w-5 h-5 text-indigo-500"></i>
                     Resumen de Impuestos a Pagar
                 </h2>
                 <div class="space-y-4">
-                    <div class="flex justify-between items-center p-3 bg-gradient-to-r from-blue-50 to-transparent dark:from-blue-900/10 rounded-xl">
+                    <div class="flex justify-between items-center p-3 bg-gradient-to-r from-indigo-50 to-transparent dark:from-indigo-900/10 rounded-xl">
                         <span class="text-sm text-gray-600 dark:text-gray-400">Ventas/Servicios (10%):</span>
                         <span id="res-sales" class="font-bold text-lg text-gray-800 dark:text-white">0.00</span>
                     </div>
@@ -521,11 +507,11 @@
                     </div>
                     <div class="flex justify-between items-center p-3 bg-gradient-to-r from-green-50 to-transparent dark:from-green-900/10 rounded-xl">
                         <span class="text-sm text-gray-600 dark:text-gray-400">Contribución CESS:</span>
-                        <span id="res-cess" class="font-bold text-lg text-gray-800 dark:text-white">0.00</span>
+                        <span id="res-cess" class="font-bold text-lg text-gray-800 dark:text-white">300.00</span>
                     </div>
                     <div class="pt-4 border-t-2 border-gray-200 dark:border-gray-700 flex justify-between items-center">
                         <span class="font-bold text-xl text-gray-800 dark:text-white">TOTAL A PAGAR:</span>
-                        <span id="res-total" class="text-3xl font-black bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">0.00</span>
+                        <span id="res-total" class="text-3xl font-black text-indigo-600 dark:text-indigo-400">300.00</span>
                     </div>
                 </div>
             </div>
@@ -536,10 +522,10 @@
             <div class="glass-card p-6">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-lg font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                        <i data-lucide="users" class="w-5 h-5 text-blue-500"></i>
+                        <i data-lucide="users" class="w-5 h-5 text-indigo-500"></i>
                         Gestión de Clientes
                     </h2>
-                    <button onclick="promptNewClient()" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl font-bold text-sm hover:shadow-lg hover:scale-105 transition-all flex items-center gap-2">
+                    <button onclick="promptNewClient()" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl font-bold text-sm hover:shadow-lg hover:scale-105 transition-all flex items-center gap-2">
                         <i data-lucide="plus-circle" class="w-4 h-4"></i>
                         Nuevo Cliente
                     </button>
@@ -550,7 +536,7 @@
                 </div>
 
                 <div id="client-content" class="hidden">
-                    <div class="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-6 rounded-2xl mb-6">
+                    <div class="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 p-6 rounded-2xl mb-6">
                         <h3 class="text-xs font-bold text-gray-500 uppercase mb-4">Nuevo Movimiento</h3>
                         <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
                             <select id="move-type" class="input-field">
@@ -560,7 +546,7 @@
                             <input type="text" id="move-concept" class="input-field" placeholder="Concepto">
                             <input type="number" id="move-amount" class="input-field" placeholder="Monto $" min="0" step="100">
                             <input type="date" id="move-date" class="input-field">
-                            <button onclick="addMovement()" class="px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl font-bold hover:shadow-lg hover:scale-105 transition-all">
+                            <button onclick="addMovement()" class="px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl font-bold hover:shadow-lg hover:scale-105 transition-all">
                                 Registrar
                             </button>
                         </div>
@@ -576,7 +562,7 @@
                             <p class="text-xs opacity-90 uppercase">Gastos</p>
                             <p id="client-expense-total" class="text-xl font-bold">0.00</p>
                         </div>
-                        <div class="bg-gradient-to-br from-blue-500 to-purple-600 p-4 rounded-2xl text-white shadow-lg">
+                        <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-4 rounded-2xl text-white shadow-lg">
                             <p class="text-xs opacity-90 uppercase">Balance</p>
                             <p id="client-balance" class="text-xl font-bold">0.00</p>
                         </div>
@@ -610,7 +596,7 @@
         <section id="section-taxes" class="hidden fade-in">
             <div class="glass-card p-6">
                 <h2 class="text-lg font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
-                    <i data-lucide="receipt" class="w-5 h-5 text-blue-500"></i>
+                    <i data-lucide="receipt" class="w-5 h-5 text-indigo-500"></i>
                     Historial de Impuestos Pagados
                 </h2>
                 
@@ -660,7 +646,7 @@
                 
                 <!-- Tax Summary Cards -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                    <div class="bg-gradient-to-br from-blue-500 to-blue-600 p-4 rounded-2xl text-white">
+                    <div class="bg-gradient-to-br from-indigo-500 to-indigo-600 p-4 rounded-2xl text-white">
                         <p class="text-xs opacity-90 uppercase">Total Impuestos</p>
                         <p id="tax-total-amount" class="text-2xl font-bold">0.00</p>
                     </div>
@@ -695,7 +681,7 @@
                             </tr>
                         </thead>
                         <tbody id="tax-table-body"></tbody>
-                        <tfoot id="tax-table-footer" class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 font-bold"></tfoot>
+                        <tfoot id="tax-table-footer" class="bg-gray-50 dark:bg-gray-800 font-bold"></tfoot>
                     </table>
                 </div>
             </div>
@@ -705,7 +691,7 @@
         <section id="section-dj" class="hidden fade-in">
             <div class="glass-card p-6">
                 <h2 class="text-lg font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
-                    <i data-lucide="file-text" class="w-5 h-5 text-blue-500"></i>
+                    <i data-lucide="file-text" class="w-5 h-5 text-indigo-500"></i>
                     Declaración Jurada Anual
                 </h2>
                 
@@ -758,9 +744,9 @@
                         <span>Base Imponible:</span>
                         <span id="dj-base" class="font-bold">0.00</span>
                     </div>
-                    <div class="flex justify-between p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl font-bold text-lg">
+                    <div class="flex justify-between p-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl font-bold text-lg">
                         <span>Impuesto DJ a Pagar:</span>
-                        <span id="dj-tax" class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">0.00</span>
+                        <span id="dj-tax" class="text-indigo-600 dark:text-indigo-400">0.00</span>
                     </div>
                 </div>
             </div>
@@ -770,13 +756,13 @@
         <section id="section-reports" class="hidden fade-in">
             <div class="glass-card p-6">
                 <h2 class="text-lg font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
-                    <i data-lucide="bar-chart-2" class="w-5 h-5 text-blue-500"></i>
+                    <i data-lucide="bar-chart-2" class="w-5 h-5 text-indigo-500"></i>
                     Reportes y Estadísticas
                 </h2>
                 
                 <!-- Summary Cards -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div class="bg-gradient-to-br from-blue-500 to-purple-600 p-6 rounded-2xl text-white">
+                    <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-6 rounded-2xl text-white">
                         <p class="text-sm opacity-90 mb-2">Total Clientes</p>
                         <p id="report-total-clients" class="text-4xl font-bold">0</p>
                     </div>
@@ -795,7 +781,7 @@
                         <p class="text-xs opacity-90">Gastos Totales</p>
                         <p id="report-total-expense" class="text-2xl font-bold">0.00</p>
                     </div>
-                    <div class="bg-gradient-to-br from-blue-500 to-cyan-600 p-4 rounded-xl text-white">
+                    <div class="bg-gradient-to-br from-indigo-500 to-cyan-600 p-4 rounded-xl text-white">
                         <p class="text-xs opacity-90">Balance Neto</p>
                         <p id="report-net" class="text-2xl font-bold">0.00</p>
                     </div>
@@ -840,26 +826,12 @@
         <button onclick="restoreFromBackup()" class="w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-2xl shadow-xl hover:shadow-2xl hover:scale-110 transition-all flex items-center justify-center">
             <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
         </button>
-        <button onclick="showBackupList()" class="w-12 h-12 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-2xl shadow-xl hover:shadow-2xl hover:scale-110 transition-all flex items-center justify-center">
+        <button onclick="showBackupList()" class="w-12 h-12 bg-gradient-to-r from-indigo-600 to-cyan-600 text-white rounded-2xl shadow-xl hover:shadow-2xl hover:scale-110 transition-all flex items-center justify-center">
             <i data-lucide="archive" class="w-5 h-5"></i>
         </button>
     </div>
 
     <script>
-        // ========== POLYFILL PARA LUCIDE ==========
-        if (typeof lucide === 'undefined') {
-            window.lucide = {
-                createIcons: function() { 
-                    console.log('🔄 Lucide no disponible - usando modo seguro');
-                    document.querySelectorAll('[data-lucide]').forEach(el => {
-                        el.innerHTML = '●';
-                        el.style.fontSize = '1.2em';
-                        el.style.opacity = '0.7';
-                    });
-                }
-            };
-        }
-
         // ========== CONSTANTS ==========
         const TAX_RATES = {
             ventas: 0.10,
@@ -999,7 +971,7 @@
 
                 localStorage.setItem('tcp_config', JSON.stringify(state.config));
 
-                // Update indicator with error handling
+                // Update indicator
                 try {
                     const indicator = document.getElementById('save-indicator');
                     if (indicator) {
@@ -1023,15 +995,14 @@
                         title: '¡Éxito!',
                         text: 'Datos guardados correctamente',
                         timer: 1500,
-                        showConfirmButton: false,
-                        background: 'rgba(255, 255, 255, 0.95)'
+                        showConfirmButton: false
                     });
                 }
 
-                // Try to sync if online (don't wait for it)
+                // Try to sync if online
                 if (navigator.onLine && GAS_URL && !GAS_URL.includes('TU_ID_AQUI')) {
                     syncWithGoogleSheets().catch(err => {
-                        console.log('Sync in background (non-critical):', err);
+                        console.log('Sync in background:', err);
                     });
                 }
 
@@ -1043,10 +1014,9 @@
                     Swal.fire({
                         icon: 'warning',
                         title: 'Atención',
-                        text: 'Datos guardados localmente, pero hubo un problema',
+                        text: 'Datos guardados localmente',
                         timer: 2000,
-                        showConfirmButton: false,
-                        background: 'rgba(255, 255, 255, 0.95)'
+                        showConfirmButton: false
                     });
                 }
                 return false;
@@ -1112,14 +1082,9 @@
 
         // ========== SYNC WITH GOOGLE SHEETS ==========
         async function syncWithGoogleSheets() {
-            console.log('🔄 Iniciando sincronización con Google Sheets...');
-            
-            const indicator = document.getElementById('save-indicator');
-            const icon = indicator.querySelector('i');
-            const text = indicator.querySelector('span');
+            console.log('🔄 Iniciando sincronización...');
             
             try {
-                // Preparar datos
                 const clientsToSync = (state.clients || []).map(c => ({ 
                     id: c.id, 
                     name: c.name || 'Sin nombre' 
@@ -1150,7 +1115,6 @@
                     }
                 };
 
-                // Enviar a Google Sheets
                 const response = await fetch(GAS_URL, {
                     method: 'POST',
                     mode: 'cors',
@@ -1166,8 +1130,7 @@
                 console.log('✅ Respuesta de Google Sheets:', result);
 
             } catch (error) {
-                console.error('⚠️ Error de sincronización (no crítico):', error);
-                // No relanzamos el error para no interrumpir el flujo principal
+                console.error('⚠️ Error de sincronización:', error);
             }
         }
 
@@ -1175,14 +1138,13 @@
         window.onload = async () => {
             console.log('🚀 Iniciando aplicación...');
             
-            // Inicializar iconos de forma segura
+            // Inicializar iconos
             try {
                 if (typeof lucide !== 'undefined' && lucide.createIcons) {
                     lucide.createIcons();
-                    console.log('✅ Lucide icons creados');
                 }
             } catch (e) {
-                console.warn('Error creando Lucide icons:', e);
+                console.warn('Error creando iconos:', e);
             }
             
             try {
@@ -1394,7 +1356,6 @@
                 inputLabel: 'Nombre del cliente',
                 inputPlaceholder: 'Ej: Juan Pérez',
                 showCancelButton: true,
-                background: 'rgba(255, 255, 255, 0.95)',
                 inputValidator: (value) => !value && 'Escribe un nombre'
             });
             
@@ -1427,7 +1388,7 @@
                 const isActive = state.selectedClientId === c.id;
                 const button = document.createElement('button');
                 button.onclick = () => selectClient(c.id);
-                button.className = `px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all ${isActive ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg scale-105' : 'bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 hover:scale-105'}`;
+                button.className = `px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all ${isActive ? 'bg-indigo-600 text-white shadow-lg scale-105' : 'bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 hover:scale-105'}`;
                 button.textContent = c.name;
                 container.appendChild(button);
             });
@@ -1484,7 +1445,7 @@
                     lucide.createIcons();
                 }
             } catch (e) {
-                console.warn('Error creating icons in movements:', e);
+                console.warn('Error creating icons:', e);
             }
         }
 
@@ -1546,8 +1507,7 @@
                 showCancelButton: true,
                 confirmButtonColor: '#ef4444',
                 confirmButtonText: 'Sí, eliminar',
-                cancelButtonText: 'Cancelar',
-                background: 'rgba(255, 255, 255, 0.95)'
+                cancelButtonText: 'Cancelar'
             });
             
             if (result.isConfirmed) {
@@ -1560,14 +1520,6 @@
                     renderMovements();
                     updateClientSummary();
                     await save(true);
-                    
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Eliminado',
-                        text: 'Movimiento eliminado correctamente',
-                        timer: 1500,
-                        showConfirmButton: false
-                    });
                 }
             }
         }
@@ -1612,7 +1564,7 @@
                         <td class="py-3 text-right">${(t.workTax||0).toFixed(2)}</td>
                         <td class="py-3 text-right">${(t.ssTax||0).toFixed(2)}</td>
                         <td class="py-3 text-right">${(t.cess||0).toFixed(2)}</td>
-                        <td class="py-3 text-right font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">${(t.total||0).toFixed(2)}</td>
+                        <td class="py-3 text-right font-bold text-indigo-600">${(t.total||0).toFixed(2)}</td>
                         <td class="py-3 text-center">
                             <button onclick="deleteTaxPayment(${t.id})" class="text-red-400 hover:text-red-600 transition-colors">
                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
@@ -1631,14 +1583,14 @@
             const footer = document.getElementById('tax-table-footer');
             if (footer) {
                 footer.innerHTML = `
-                    <tr class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900">
+                    <tr>
                         <td colspan="2" class="py-3 text-right font-bold">TOTALES:</td>
                         <td class="py-3 text-right font-bold">${totalSales.toFixed(2)}</td>
                         <td class="py-3 text-right font-bold">${totalPersonal.toFixed(2)}</td>
                         <td class="py-3 text-right font-bold">${totalWork.toFixed(2)}</td>
                         <td class="py-3 text-right font-bold">${totalSS.toFixed(2)}</td>
                         <td class="py-3 text-right font-bold">${totalCess.toFixed(2)}</td>
-                        <td class="py-3 text-right font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">${totalAll.toFixed(2)}</td>
+                        <td class="py-3 text-right font-bold text-indigo-600">${totalAll.toFixed(2)}</td>
                         <td></td>
                     </tr>
                 `;
@@ -1649,7 +1601,7 @@
                     lucide.createIcons();
                 }
             } catch (e) {
-                console.warn('Error creating icons in tax table:', e);
+                console.warn('Error creating icons:', e);
             }
         }
 
@@ -1665,8 +1617,7 @@
                 showCancelButton: true,
                 confirmButtonColor: '#ef4444',
                 confirmButtonText: 'Sí, eliminar',
-                cancelButtonText: 'Cancelar',
-                background: 'rgba(255, 255, 255, 0.95)'
+                cancelButtonText: 'Cancelar'
             });
             
             if (result.isConfirmed) {
@@ -1674,14 +1625,6 @@
                 await dbDelete(STORES.TAX_PAYMENTS, id);
                 renderTaxTable();
                 await save(true);
-                
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Eliminado',
-                    text: 'Pago eliminado correctamente',
-                    timer: 1500,
-                    showConfirmButton: false
-                });
             }
         }
 
@@ -1748,8 +1691,7 @@
             Swal.fire({
                 icon: 'info',
                 title: 'Próximamente',
-                text: 'La generación de PDF estará disponible en la próxima versión',
-                background: 'rgba(255, 255, 255, 0.95)'
+                text: 'La generación de PDF estará disponible en la próxima versión'
             });
         }
 
@@ -1797,7 +1739,7 @@
                     <td class="py-3 font-medium">${c.name}</td>
                     <td class="py-3 text-right text-green-600">${clientIncome.toFixed(2)}</td>
                     <td class="py-3 text-right text-red-600">${clientExpense.toFixed(2)}</td>
-                    <td class="py-3 text-right text-blue-600">${(clientIncome - clientExpense).toFixed(2)}</td>
+                    <td class="py-3 text-right text-indigo-600">${(clientIncome - clientExpense).toFixed(2)}</td>
                     <td class="py-3 text-right text-purple-600">${clientTaxes.toFixed(2)}</td>
                 `;
                 breakdown.appendChild(row);
@@ -1820,13 +1762,7 @@
                         datasets: [{
                             label: 'Monto (CUP)',
                             data: [income, expense, income - expense],
-                            backgroundColor: [
-                                'rgba(16, 185, 129, 0.8)',
-                                'rgba(239, 68, 68, 0.8)',
-                                'rgba(59, 130, 246, 0.8)'
-                            ],
-                            borderRadius: 8,
-                            borderSkipped: false
+                            backgroundColor: ['#22c55e', '#ef4444', '#6366f1']
                         }]
                     },
                     options: {
@@ -1834,14 +1770,6 @@
                         maintainAspectRatio: false,
                         plugins: {
                             legend: { display: false }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: {
-                                    display: false
-                                }
-                            }
                         }
                     }
                 });
@@ -1863,30 +1791,12 @@
                         labels: ['Ventas', 'Personal', 'F. Trabajo', 'SS Empl', 'CESS'],
                         datasets: [{
                             data: [taxBreakdown.sales, taxBreakdown.personal, taxBreakdown.work, taxBreakdown.ss, taxBreakdown.cess],
-                            backgroundColor: [
-                                'rgba(59, 130, 246, 0.8)',
-                                'rgba(139, 92, 246, 0.8)',
-                                'rgba(236, 72, 153, 0.8)',
-                                'rgba(245, 158, 11, 0.8)',
-                                'rgba(16, 185, 129, 0.8)'
-                            ],
-                            borderWidth: 0,
-                            borderRadius: 8
+                            backgroundColor: ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981']
                         }]
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: {
-                                    usePointStyle: true,
-                                    boxWidth: 8
-                                }
-                            }
-                        },
-                        cutout: '60%'
+                        maintainAspectRatio: false
                     }
                 });
             }
@@ -1938,7 +1848,6 @@
                 confirmButtonText: 'Restaurar',
                 showCancelButton: true,
                 cancelButtonText: 'Cancelar',
-                background: 'rgba(255, 255, 255, 0.95)',
                 preConfirm: async () => {
                     const key = document.getElementById('backup-select').value;
                     const backupData = localStorage.getItem(key);
@@ -1970,7 +1879,7 @@
                 const date = key.replace('tcp_backup_', '');
                 html += `<div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
                     <span class="font-medium">📅 ${date}</span>
-                    <button onclick="loadBackup('${key}')" class="px-4 py-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl text-xs font-bold hover:scale-105 transition-all">
+                    <button onclick="loadBackup('${key}')" class="px-4 py-1 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:scale-105 transition-all">
                         Cargar
                     </button>
                 </div>`;
@@ -1980,8 +1889,7 @@
             Swal.fire({
                 title: 'Respaldos disponibles',
                 html: html,
-                confirmButtonText: 'Cerrar',
-                background: 'rgba(255, 255, 255, 0.95)'
+                confirmButtonText: 'Cerrar'
             });
         }
 
@@ -2014,8 +1922,7 @@
                     showCancelButton: true,
                     confirmButtonText: 'Sí, importar',
                     cancelButtonText: 'Cancelar',
-                    confirmButtonColor: '#ef4444',
-                    background: 'rgba(255, 255, 255, 0.95)'
+                    confirmButtonColor: '#ef4444'
                 });
                 
                 if (result.isConfirmed) {
@@ -2054,7 +1961,3 @@
     </script>
 </body>
 </html>
-
-
-
-
