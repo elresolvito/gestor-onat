@@ -8,14 +8,33 @@
     <!-- PWA Configuration -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0f2b4b">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Gestor TCP">
     
-    <!-- Fonts & Icons -->
+    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.js"></script>
+    
+    <!-- Tailwind CSS (producción) -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    
+    <!-- Lucide Icons con fallback -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        // Polyfill para Lucide (evita errores si no carga)
+        window.lucide = window.lucide || {
+            createIcons: function() { 
+                console.log('🔄 Lucide no disponible - usando modo seguro');
+                // Placeholder para iconos
+                document.querySelectorAll('[data-lucide]').forEach(el => {
+                    el.innerHTML = '●';
+                    el.style.fontSize = '1.2em';
+                });
+            }
+        };
+    </script>
+    
+    <!-- SweetAlert2 y Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
@@ -827,6 +846,20 @@
     </div>
 
     <script>
+        // ========== POLYFILL PARA LUCIDE ==========
+        if (typeof lucide === 'undefined') {
+            window.lucide = {
+                createIcons: function() { 
+                    console.log('🔄 Lucide no disponible - usando modo seguro');
+                    document.querySelectorAll('[data-lucide]').forEach(el => {
+                        el.innerHTML = '●';
+                        el.style.fontSize = '1.2em';
+                        el.style.opacity = '0.7';
+                    });
+                }
+            };
+        }
+
         // ========== CONSTANTS ==========
         const TAX_RATES = {
             ventas: 0.10,
@@ -850,6 +883,10 @@
             MOVEMENTS: 'movimientos',
             TAX_PAYMENTS: 'impuestos'
         };
+
+        // ========== GOOGLE SHEETS SYNC ==========
+        // ⚠️ IMPORTANTE: Reemplaza con tu URL real de Google Apps Script
+        const GAS_URL = 'https://script.google.com/macros/s/TU_ID_AQUI/exec';
 
         // ========== STATE ==========
         let state = {
@@ -938,18 +975,6 @@
             });
         }
 
-        async function dbGetByIndex(storeName, indexName, value) {
-            const db = await openDB();
-            return new Promise((resolve, reject) => {
-                const transaction = db.transaction(storeName, 'readonly');
-                const store = transaction.objectStore(storeName);
-                const index = store.index(indexName);
-                const request = index.getAll(value);
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = () => reject(request.error);
-            });
-        }
-
         // ========== SAVE FUNCTION ==========
         async function save(showNotification = false) {
             try {
@@ -972,17 +997,25 @@
                     await dbPut(STORES.TAX_PAYMENTS, taxPayment);
                 }
 
-                // Save config in localStorage
                 localStorage.setItem('tcp_config', JSON.stringify(state.config));
 
-                // Update indicator
-                const indicator = document.getElementById('save-indicator');
-                const icon = indicator.querySelector('i');
-                const text = indicator.querySelector('span');
-                
-                icon.setAttribute('data-lucide', 'check-circle');
-                text.textContent = 'Guardado';
-                lucide.createIcons();
+                // Update indicator with error handling
+                try {
+                    const indicator = document.getElementById('save-indicator');
+                    if (indicator) {
+                        const icon = indicator.querySelector('i');
+                        const text = indicator.querySelector('span');
+                        
+                        if (icon) icon.setAttribute('data-lucide', 'check-circle');
+                        if (text) text.textContent = 'Guardado';
+                        
+                        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                            lucide.createIcons();
+                        }
+                    }
+                } catch (iconError) {
+                    console.warn('Error updating icons:', iconError);
+                }
 
                 if (showNotification) {
                     Swal.fire({
@@ -991,25 +1024,31 @@
                         text: 'Datos guardados correctamente',
                         timer: 1500,
                         showConfirmButton: false,
-                        background: 'rgba(255, 255, 255, 0.95)',
-                        backdrop: 'rgba(0,0,0,0.5)'
+                        background: 'rgba(255, 255, 255, 0.95)'
                     });
                 }
 
-                // Try to sync if online
-                if (navigator.onLine) {
-                    syncWithGoogleSheets();
+                // Try to sync if online (don't wait for it)
+                if (navigator.onLine && GAS_URL && !GAS_URL.includes('TU_ID_AQUI')) {
+                    syncWithGoogleSheets().catch(err => {
+                        console.log('Sync in background (non-critical):', err);
+                    });
                 }
 
                 return true;
             } catch (error) {
                 console.error('Error saving:', error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'No se pudieron guardar los datos',
-                    background: 'rgba(255, 255, 255, 0.95)'
-                });
+                
+                if (showNotification) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Atención',
+                        text: 'Datos guardados localmente, pero hubo un problema',
+                        timer: 2000,
+                        showConfirmButton: false,
+                        background: 'rgba(255, 255, 255, 0.95)'
+                    });
+                }
                 return false;
             }
         }
@@ -1054,7 +1093,7 @@
                     state.selectedClientId = state.clients[0].id;
                 }
 
-                console.log('State loaded from IndexedDB', state);
+                console.log('✅ State loaded from IndexedDB');
             } catch (error) {
                 console.error('Error loading state:', error);
                 // Fallback to example data
@@ -1071,27 +1110,34 @@
             return state;
         }
 
-        // ========== GOOGLE SHEETS SYNC ==========
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbyXnG7adeqc4hICacKiStqIj6NeOKJEIBpzwrZU7fFtkKBFbNWDc-tzc-WUZVYSUGee5A/exec'; // Reemplazar con tu URL
-
+        // ========== SYNC WITH GOOGLE SHEETS ==========
         async function syncWithGoogleSheets() {
-            console.log('Syncing with Google Sheets...');
+            console.log('🔄 Iniciando sincronización con Google Sheets...');
             
             const indicator = document.getElementById('save-indicator');
             const icon = indicator.querySelector('i');
             const text = indicator.querySelector('span');
             
             try {
-                icon.setAttribute('data-lucide', 'loader');
-                text.textContent = 'Sincronizando...';
-                lucide.createIcons();
-
-                const clientsToSync = state.clients.map(c => ({ id: c.id, name: c.name }));
+                // Preparar datos
+                const clientsToSync = (state.clients || []).map(c => ({ 
+                    id: c.id, 
+                    name: c.name || 'Sin nombre' 
+                }));
                 
                 const movementsToSync = [];
-                state.clients.forEach(c => {
-                    if (c.movements) {
-                        c.movements.forEach(m => movementsToSync.push({ ...m, clientId: c.id }));
+                (state.clients || []).forEach(c => {
+                    if (c.movements && Array.isArray(c.movements)) {
+                        c.movements.forEach(m => {
+                            movementsToSync.push({ 
+                                id: m.id, 
+                                clientId: c.id, 
+                                date: m.date || new Date().toISOString().split('T')[0],
+                                type: m.type || 'income', 
+                                concept: m.concept || 'Sin concepto', 
+                                amount: m.amount || 0 
+                            });
+                        });
                     }
                 });
                 
@@ -1100,64 +1146,75 @@
                     data: {
                         clients: clientsToSync,
                         movements: movementsToSync,
-                        taxes: state.taxPayments
+                        taxes: state.taxPayments || []
                     }
                 };
 
-                await fetch(GAS_URL, {
+                // Enviar a Google Sheets
+                const response = await fetch(GAS_URL, {
                     method: 'POST',
-                    mode: 'no-cors',
+                    mode: 'cors',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
 
-                setTimeout(() => {
-                    icon.setAttribute('data-lucide', 'check-circle');
-                    text.textContent = 'Guardado';
-                    lucide.createIcons();
-                }, 2000);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log('✅ Respuesta de Google Sheets:', result);
 
             } catch (error) {
-                console.error('Sync error:', error);
-                icon.setAttribute('data-lucide', 'alert-circle');
-                text.textContent = 'Error Sync';
-                lucide.createIcons();
-                
-                setTimeout(() => {
-                    icon.setAttribute('data-lucide', 'check-circle');
-                    text.textContent = 'Guardado';
-                    lucide.createIcons();
-                }, 3000);
+                console.error('⚠️ Error de sincronización (no crítico):', error);
+                // No relanzamos el error para no interrumpir el flujo principal
             }
         }
 
         // ========== INIT ==========
         window.onload = async () => {
-            lucide.createIcons();
-            await loadState();
-            renderClients();
-            updateClientSelects();
-            calculateTaxes();
-            calculateReports();
+            console.log('🚀 Iniciando aplicación...');
             
-            // Set today's date
-            const today = new Date().toISOString().split('T')[0];
-            const dateInput = document.getElementById('move-date');
-            if (dateInput) dateInput.value = today;
-            
-            // Apply dark mode
-            if (state.config.darkMode) {
-                document.body.classList.add('dark');
-                updateDarkModeIcon();
+            // Inicializar iconos de forma segura
+            try {
+                if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                    lucide.createIcons();
+                    console.log('✅ Lucide icons creados');
+                }
+            } catch (e) {
+                console.warn('Error creando Lucide icons:', e);
             }
             
-            // Connection status
-            updateConnectionStatus();
-            window.addEventListener('online', updateConnectionStatus);
-            window.addEventListener('offline', updateConnectionStatus);
-            
-            // Save before unload
-            window.addEventListener('beforeunload', () => save());
+            try {
+                await loadState();
+                renderClients();
+                updateClientSelects();
+                calculateTaxes();
+                calculateReports();
+                
+                // Set today's date
+                const today = new Date().toISOString().split('T')[0];
+                const dateInput = document.getElementById('move-date');
+                if (dateInput) dateInput.value = today;
+                
+                // Apply dark mode
+                if (state.config.darkMode) {
+                    document.body.classList.add('dark');
+                    updateDarkModeIcon();
+                }
+                
+                // Connection status
+                updateConnectionStatus();
+                window.addEventListener('online', updateConnectionStatus);
+                window.addEventListener('offline', updateConnectionStatus);
+                
+                // Save before unload
+                window.addEventListener('beforeunload', () => save());
+                
+                console.log('✅ Aplicación iniciada correctamente');
+            } catch (error) {
+                console.error('❌ Error en inicio:', error);
+            }
         };
 
         function updateConnectionStatus() {
@@ -1180,10 +1237,16 @@
         }
 
         function updateDarkModeIcon() {
-            const icon = document.querySelector('button[onclick="toggleDarkMode()"] i');
-            if (icon) {
-                icon.setAttribute('data-lucide', state.config.darkMode ? 'sun' : 'moon');
-                lucide.createIcons();
+            try {
+                const icon = document.querySelector('button[onclick="toggleDarkMode()"] i');
+                if (icon) {
+                    icon.setAttribute('data-lucide', state.config.darkMode ? 'sun' : 'moon');
+                    if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                        lucide.createIcons();
+                    }
+                }
+            } catch (e) {
+                console.warn('Error updating dark mode icon:', e);
             }
         }
 
@@ -1283,8 +1346,7 @@
                 title: '¡Registrado!',
                 text: `Impuesto de ${taxes.total.toFixed(2)} CUP registrado`,
                 timer: 1500,
-                showConfirmButton: false,
-                background: 'rgba(255, 255, 255, 0.95)'
+                showConfirmButton: false
             });
             
             await save(true);
@@ -1417,7 +1479,13 @@
                 body.appendChild(row);
             });
             
-            lucide.createIcons();
+            try {
+                if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                    lucide.createIcons();
+                }
+            } catch (e) {
+                console.warn('Error creating icons in movements:', e);
+            }
         }
 
         function updateClientSummary() {
@@ -1487,7 +1555,6 @@
                 if (client && client.movements) {
                     client.movements = client.movements.filter(m => m.id !== movementId);
                     
-                    // Also delete from IndexedDB
                     await dbDelete(STORES.MOVEMENTS, movementId);
                     
                     renderMovements();
@@ -1577,7 +1644,13 @@
                 `;
             }
             
-            lucide.createIcons();
+            try {
+                if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                    lucide.createIcons();
+                }
+            } catch (e) {
+                console.warn('Error creating icons in tax table:', e);
+            }
         }
 
         function filterTaxes() {
@@ -1662,7 +1735,6 @@
                     tax = bracket.base + (taxable * bracket.rate);
                     break;
                 }
-                if (net > bracket.max) continue;
             }
 
             document.getElementById('dj-incomes').innerText = totalI.toFixed(2);
@@ -1982,5 +2054,6 @@
     </script>
 </body>
 </html>
+
 
 
